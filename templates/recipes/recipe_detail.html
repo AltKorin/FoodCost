@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load recipe_extras %}
+{% block title %}{{ recipe.name }}{% endblock %}
+{% block content %}
+<p class="mb-1"><a href="{% url 'recipes:recipe-list' %}">← Wszystkie przepisy</a></p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">{{ recipe.name }}</h1>
+        <p class="text-muted mb-0">{{ recipe.get_meal_type_display }} · {{ recipe.yield_portions }} porcji</p>
+    </div>
+    <a href="{% url 'recipes:recipe-update' recipe.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edytuj</a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="fc-stat-card">
+            <div class="fc-stat-card__value">{{ total_cost|floatformat:2 }} PLN</div>
+            <div class="fc-stat-card__label">Koszt całkowity</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="fc-stat-card">
+            <div class="fc-stat-card__value">{{ cost_per_portion }} PLN</div>
+            <div class="fc-stat-card__label">Koszt / porcję</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="fc-stat-card">
+            {% if food_cost_pct is not None %}
+            <div class="fc-stat-card__value"><span class="badge fc-badge fc-{{ fc_status }}">{{ food_cost_pct }}%</span></div>
+            {% else %}
+            <div class="fc-stat-card__value text-muted">—</div>
+            {% endif %}
+            <div class="fc-stat-card__label">FC% (cena: {{ recipe.selling_price|default:"brak" }})</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="fc-stat-card">
+            {% if recipe.food_cost_pct_package is not None %}
+            <div class="fc-stat-card__value">{{ recipe.food_cost_pct_package }}%</div>
+            {% else %}
+            <div class="fc-stat-card__value text-muted">—</div>
+            {% endif %}
+            <div class="fc-stat-card__label">FC% pakietowe</div>
+        </div>
+    </div>
+</div>
+
+{% if recipe.contexts.all %}
+<div class="mb-3">
+    {% for context in recipe.contexts.all %}
+    <span class="badge fc-badge fc-{{ recipe|fc_status_for_context:context }} me-1">
+        {{ context.name }}: {% if food_cost_pct is not None %}{{ food_cost_pct }}% (cel {{ context.target_fc_pct }}%){% else %}brak ceny{% endif %}
+    </span>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if recipe.manual_cost_override is not None %}
+<div class="alert alert-info">
+    Koszt wpisany ręcznie ({{ recipe.manual_cost_override }} PLN / porcję) — składniki poniżej,
+    jeśli są, są tylko informacyjne i NIE wliczają się do kosztu.
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Składniki</div>
+    {% if rows %}
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Składnik</th>
+                    <th>Ilość</th>
+                    <th class="d-none d-md-table-cell">Yield</th>
+                    <th class="d-none d-md-table-cell">Dostawca</th>
+                    <th>Koszt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.ri.ingredient.name }}{% if row.ri.is_optional %} <span class="badge bg-secondary">opcjonalny</span>{% endif %}</td>
+                    <td>{{ row.ri.quantity }} {{ row.ri.get_unit_display }}</td>
+                    <td class="d-none d-md-table-cell">{{ row.ri.yield_factor }}</td>
+                    <td class="d-none d-md-table-cell">{{ row.ri.preferred_supplier|default:"najtańszy" }}</td>
+                    <td>
+                        {% if row.price is not None %}{{ row.cost }} PLN{% else %}<span class="text-danger">brak ceny</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">Ten przepis nie ma jeszcze żadnych składników.</div>
+    {% endif %}
+</div>
+
+{% if recipe.notes %}
+<div class="card mt-3">
+    <div class="card-header">Notatki</div>
+    <div class="card-body">{{ recipe.notes|linebreaksbr }}</div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Rejestracja{% endblock %}
+{% block bare_content %}
+<div class="card shadow-sm" style="max-width: 420px; width: 100%;">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-1"><i class="bi bi-egg-fried text-success"></i> FoodCost</h1>
+        <p class="text-muted mb-4">Załóż darmowe konto</p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            <div class="mb-3">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {{ form.email.errors }}
+            </div>
+            <div class="mb-3">
+                {{ form.password1.label_tag }}
+                {{ form.password1 }}
+                {% if form.password1.help_text %}<div class="form-text">{{ form.password1.help_text|safe }}</div>{% endif %}
+                {{ form.password1.errors }}
+            </div>
+            <div class="mb-3">
+                {{ form.password2.label_tag }}
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form.accept_tos }}
+                {{ form.accept_tos.label_tag }}
+                {{ form.accept_tos.errors }}
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit">Załóż konto</button>
+        </form>
+
+        <p class="text-center small text-muted mt-3 mb-0">
+            Masz już konto? <a href="{% url 'accounts:login' %}">Zaloguj się</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

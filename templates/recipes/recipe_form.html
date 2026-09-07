@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="card mb-3">
+        <div class="card-body row g-3">
+            <div class="col-md-6">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+            <div class="col-md-3">
+                {{ form.meal_type.label_tag }}
+                {{ form.meal_type }}
+            </div>
+            <div class="col-md-3">
+                {{ form.yield_portions.label_tag }}
+                {{ form.yield_portions }}
+                {{ form.yield_portions.errors }}
+            </div>
+            <div class="col-md-4">
+                {{ form.selling_price.label_tag }}
+                {{ form.selling_price }}
+                {{ form.selling_price.errors }}
+            </div>
+            <div class="col-md-4">
+                {{ form.package_price_per_person.label_tag }}
+                {{ form.package_price_per_person }}
+            </div>
+            <div class="col-md-4">
+                {{ form.contexts.label_tag }}
+                {{ form.contexts }}
+            </div>
+            <div class="col-md-6">
+                {{ form.manual_cost_override.label_tag }}
+                {{ form.manual_cost_override }}
+                <div class="form-text">{{ form.manual_cost_override.help_text }}</div>
+            </div>
+            <div class="col-12">
+                {{ form.notes.label_tag }}
+                {{ form.notes }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" x-data="fcIngredientsTable()">
+        <div class="card-header">Składniki</div>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle" id="fc-ingredient-rows">
+                <thead>
+                    <tr>
+                        <th style="min-width: 200px;">Składnik</th>
+                        <th style="width: 110px;">Ilość</th>
+                        <th style="width: 100px;">Jedn.</th>
+                        <th style="width: 100px;">Yield</th>
+                        <th style="min-width: 160px;">Dostawca</th>
+                        <th style="width: 110px;">Koszt (podgląd)</th>
+                        <th class="d-none d-md-table-cell">Opcjonalny</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ formset.management_form }}
+                    {% for ri_form in formset %}
+                    <tr class="fc-ri-row" x-data="fcIngredientRow()">
+                        <td>
+                            {{ ri_form.id }}
+                            {{ ri_form.non_field_errors }}
+                            {{ ri_form.ingredient }}
+                            {{ ri_form.ingredient.errors }}
+                        </td>
+                        <td>{{ ri_form.quantity }}</td>
+                        <td>{{ ri_form.unit }}</td>
+                        <td>{{ ri_form.yield_factor }}</td>
+                        <td>{{ ri_form.preferred_supplier }}</td>
+                        <td class="fc-ri-cost text-muted small">—</td>
+                        <td class="d-none d-md-table-cell">{{ ri_form.is_optional }}</td>
+                        <td>
+                            {% if ri_form.DELETE %}
+                            <label class="small text-danger">
+                                {{ ri_form.DELETE }} usuń
+                            </label>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="fc-add-row">
+                <i class="bi bi-plus-lg"></i> Dodaj kolejny składnik
+            </button>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Zapisz przepis</button>
+    <a href="{% url 'recipes:recipe-list' %}" class="btn btn-outline-secondary">Anuluj</a>
+</form>
+
+{# Szablon pustego wiersza formsetu do klonowania przez JS (Django "empty_form" pattern) #}
+<table class="d-none"><tbody id="fc-empty-form-template">
+    <tr class="fc-ri-row" x-data="fcIngredientRow()">
+        <td>{{ formset.empty_form.id }}{{ formset.empty_form.ingredient }}</td>
+        <td>{{ formset.empty_form.quantity }}</td>
+        <td>{{ formset.empty_form.unit }}</td>
+        <td>{{ formset.empty_form.yield_factor }}</td>
+        <td>{{ formset.empty_form.preferred_supplier }}</td>
+        <td class="fc-ri-cost text-muted small">—</td>
+        <td class="d-none d-md-table-cell">{{ formset.empty_form.is_optional }}</td>
+        <td><label class="small text-danger">{{ formset.empty_form.DELETE }} usuń</label></td>
+    </tr>
+</tbody></table>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Podgląd kosztu per wiersz — NIE jest źródłem prawdy (to liczy
+// RecipeIngredient.get_cost() po stronie serwera po zapisie), tylko
+// orientacyjna kalkulacja żeby widzieć koszt zanim się zapisze przepis.
+const FC_UNIT_CONVERSIONS = {
+    g:    {kg: 0.001, g: 1},
+    kg:   {kg: 1, g: 1000},
+    ml:   {l: 0.001, ml: 1},
+    l:    {l: 1, ml: 1000},
+    szt:  {szt: 1},
+    opak: {opak: 1},
+};
+
+function fcIngredientRow() {
+    return {
+        price: null,
+        baseUnit: null,
+        hasPrice: false,
+        async fetchPrice(row) {
+            const ingredientId = row.querySelector('select[name$="-ingredient"]').value;
+            if (!ingredientId) { this.hasPrice = false; return; }
+            const supplierId = row.querySelector('select[name$="-preferred_supplier"]').value;
+            let url = `/ingredients/api/${ingredientId}/price/`;
+            if (supplierId) url += `?supplier=${supplierId}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                this.hasPrice = data.has_price;
+                this.price = data.price_per_base_unit ? parseFloat(data.price_per_base_unit) : null;
+                this.baseUnit = data.base_unit;
+            } catch (e) {
+                this.hasPrice = false;
+            }
+            this.updateCost(row);
+        },
+        updateCost(row) {
+            const cell = row.querySelector('.fc-ri-cost');
+            const quantity = parseFloat(row.querySelector('input[name$="-quantity"]').value);
+            const unit = row.querySelector('select[name$="-unit"]').value;
+            const yieldFactor = parseFloat(row.querySelector('input[name$="-yield_factor"]').value);
+
+            if (!this.hasPrice || !quantity || !yieldFactor || !unit) {
+                cell.textContent = this.hasPrice === false ? 'brak ceny' : '—';
+                return;
+            }
+            const factor = unit === this.baseUnit ? 1 : (FC_UNIT_CONVERSIONS[unit] || {})[this.baseUnit];
+            if (factor === undefined) {
+                cell.textContent = '—';
+                return;
+            }
+            const cost = this.price * (quantity * factor) / yieldFactor;
+            cell.textContent = cost.toFixed(2) + ' PLN';
+        },
+    };
+}
+
+function fcIngredientsTable() {
+    return {};
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    function wireRow(row) {
+        const alpineData = Alpine.$data(row);
+        const refetch = () => alpineData.fetchPrice(row);
+        const recalc = () => alpineData.updateCost(row);
+        row.querySelector('select[name$="-ingredient"]').addEventListener('change', refetch);
+        row.querySelector('select[name$="-preferred_supplier"]').addEventListener('change', refetch);
+        row.querySelector('input[name$="-quantity"]').addEventListener('input', recalc);
+        row.querySelector('select[name$="-unit"]').addEventListener('change', recalc);
+        row.querySelector('input[name$="-yield_factor"]').addEventListener('input', recalc);
+        if (row.querySelector('select[name$="-ingredient"]').value) refetch();
+    }
+
+    document.querySelectorAll('#fc-ingredient-rows .fc-ri-row').forEach(wireRow);
+
+    const addBtn = document.getElementById('fc-add-row');
+    const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+    const template = document.getElementById('fc-empty-form-template').querySelector('tr');
+    const tbody = document.querySelector('#fc-ingredient-rows tbody');
+
+    addBtn.addEventListener('click', () => {
+        const index = parseInt(totalFormsInput.value, 10);
+        const html = template.outerHTML.replace(/__prefix__/g, index);
+        tbody.insertAdjacentHTML('beforeend', html);
+        const newRow = tbody.lastElementChild;
+        Alpine.initTree(newRow);
+        wireRow(newRow);
+        totalFormsInput.value = index + 1;
+    });
+});
+</script>
+{% endblock %}

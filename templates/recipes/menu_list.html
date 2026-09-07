@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Menu{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Menu</h1>
+    <a href="{% url 'recipes:menu-create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nowe menu</a>
+</div>
+<p class="text-muted">Menu to pakiet na wydarzenie złożony z wielu przepisów (dań) — np. "Wigilia firmowa — Menu 1".</p>
+
+{% if menus %}
+<div class="table-responsive">
+    <table class="table table-hover bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th class="d-none d-md-table-cell">Cena / osoba</th>
+                <th class="d-none d-md-table-cell">Koszt / osoba</th>
+                <th>FC%</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for menu in menus %}
+            <tr>
+                <td><a href="{% url 'recipes:menu-detail' menu.pk %}">{{ menu.name }}</a></td>
+                <td class="d-none d-md-table-cell">{{ menu.package_price_per_person|default:"—" }}{% if menu.package_price_per_person %} PLN{% endif %}</td>
+                <td class="d-none d-md-table-cell">{{ menu.total_cost_per_person|floatformat:2 }} PLN{% if not menu.is_cost_complete %} <span class="text-muted small">(niepełne)</span>{% endif %}</td>
+                <td>
+                    {% if menu.food_cost_pct is not None %}
+                    <span class="badge fc-badge fc-{{ menu.fc_status }}">{{ menu.food_cost_pct }}%</span>
+                    {% else %}
+                    <span class="badge fc-badge fc-unknown">brak ceny</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'recipes:menu-update' menu.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'recipes:menu-delete' menu.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="fc-empty">
+    <i class="bi bi-clipboard-check"></i>
+    <p class="mb-3">Utwórz pierwsze menu i dodaj do niego przepisy (dania).</p>
+    <a href="{% url 'recipes:menu-create' %}" class="btn btn-primary">Utwórz pierwsze menu</a>
+</div>
+{% endif %}
+{% endblock %}

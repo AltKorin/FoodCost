@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ menu.name }}{% endblock %}
+{% block content %}
+<p class="mb-1"><a href="{% url 'recipes:menu-list' %}">← Wszystkie menu</a></p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">{{ menu.name }}</h1>
+        <p class="text-muted mb-0">Cel FC%: {{ menu.target_fc_pct }}%</p>
+    </div>
+    <a href="{% url 'recipes:menu-update' menu.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edytuj</a>
+</div>
+
+{% if not is_cost_complete %}
+<div class="alert alert-warning">
+    Nie wszystkie dania w tym menu mają jeszcze koszt (składniki albo ręczna cena) —
+    suma poniżej jest zaniżona, brakujące dania liczą się jako 0 zł.
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-4">
+        <div class="fc-stat-card">
+            <div class="fc-stat-card__value">{{ menu.package_price_per_person|default:"—" }}{% if menu.package_price_per_person %} PLN{% endif %}</div>
+            <div class="fc-stat-card__label">Cena pakietowa / osoba</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="fc-stat-card">
+            <div class="fc-stat-card__value">{{ total_cost_per_person|floatformat:2 }} PLN</div>
+            <div class="fc-stat-card__label">Koszt / osoba{% if not is_cost_complete %} (niepełny){% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="fc-stat-card">
+            {% if food_cost_pct is not None %}
+            <div class="fc-stat-card__value"><span class="badge fc-badge fc-{{ fc_status }}">{{ food_cost_pct }}%</span></div>
+            {% else %}
+            <div class="fc-stat-card__value text-muted">—</div>
+            {% endif %}
+            <div class="fc-stat-card__label">Food cost%</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Dania w tym menu</div>
+    {% if rows %}
+    <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Przepis (danie)</th>
+                    <th>Ilość / gościa</th>
+                    <th>Koszt / gościa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>
+                        <a href="{% url 'recipes:recipe-detail' row.item.recipe.pk %}">{{ row.item.recipe.name }}</a>
+                        {% if not row.item.recipe.has_cost_data %}<span class="badge bg-secondary">brak kosztu</span>{% endif %}
+                    </td>
+                    <td>{{ row.item.quantity }}</td>
+                    <td>{{ row.cost }} PLN</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">To menu nie ma jeszcze żadnych dań.</div>
+    {% endif %}
+</div>
+
+{% if menu.notes %}
+<div class="card mt-3">
+    <div class="card-header">Notatki</div>
+    <div class="card-body">{{ menu.notes|linebreaksbr }}</div>
+</div>
+{% endif %}
+{% endblock %}

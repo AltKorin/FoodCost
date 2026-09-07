@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dostawcy{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Dostawcy</h1>
+    <a href="{% url 'ingredients:supplier-create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nowy dostawca</a>
+</div>
+
+{% if suppliers %}
+<div class="table-responsive">
+    <table class="table table-hover bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th class="d-none d-md-table-cell">Kontakt</th>
+                <th class="d-none d-md-table-cell">Telefon</th>
+                <th class="d-none d-md-table-cell">Dni dostaw</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+            <tr>
+                <td>{{ supplier.name }}</td>
+                <td class="d-none d-md-table-cell">{{ supplier.contact_name|default:"—" }}</td>
+                <td class="d-none d-md-table-cell">{{ supplier.phone|default:"—" }}</td>
+                <td class="d-none d-md-table-cell">{{ supplier.delivery_days|default:"—" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'ingredients:supplier-update' supplier.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'ingredients:supplier-delete' supplier.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="fc-empty">
+    <i class="bi bi-truck"></i>
+    <p class="mb-3">Dodaj dostawcę, żeby móc przypisywać ceny do składników.</p>
+    <a href="{% url 'ingredients:supplier-create' %}" class="btn btn-primary">Dodaj dostawcę</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Edytuj dostawcę{% else %}Nowy dostawca{% endif %}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{% if object %}Edytuj dostawcę{% else %}Nowy dostawca{% endif %}</h1>
+<div class="card" style="max-width: 520px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+            <div class="mb-3">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+            {% endfor %}
+            <button class="btn btn-primary" type="submit">Zapisz</button>
+            <a href="{% url 'ingredients:supplier-list' %}" class="btn btn-outline-secondary">Anuluj</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

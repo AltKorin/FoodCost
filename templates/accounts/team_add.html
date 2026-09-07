@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Dodaj osobę{% endblock %}
+{% block content %}
+<p class="mb-1"><a href="{% url 'accounts:team-list' %}">← Zespół</a></p>
+<h1 class="h3 mb-3">Dodaj osobę do organizacji</h1>
+
+{% if generated_password %}
+<div class="alert alert-success">
+    <strong>Konto {{ new_user.email }} utworzone.</strong>
+    Hasło pokazuje się tylko raz — skopiuj je i przekaż tej osobie teraz:
+    <div class="mt-2">
+        <code style="font-size: 1.1rem;">{{ generated_password }}</code>
+    </div>
+</div>
+<a href="{% url 'accounts:team-add' %}" class="btn btn-outline-secondary btn-sm">Dodaj kolejną osobę</a>
+<a href="{% url 'accounts:team-list' %}" class="btn btn-primary btn-sm">Wróć do zespołu</a>
+{% else %}
+<div class="card" style="max-width: 480px;">
+    <div class="card-body">
+        <p class="text-muted small">
+            Serwis nie wysyła jeszcze maili z zaproszeniem — hasło zostanie
+            wygenerowane i pokazane raz na tym ekranie, przekaż je ręcznie.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+            <div class="mb-3">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+            {% endfor %}
+            <button class="btn btn-primary" type="submit">Utwórz konto</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Zespół{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Zespół</h1>
+    {% if user.is_org_admin %}
+    <a href="{% url 'accounts:team-add' %}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Dodaj osobę</a>
+    {% endif %}
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover bg-white align-middle">
+        <thead>
+            <tr>
+                <th>E-mail</th>
+                <th>Rola</th>
+                <th class="d-none d-md-table-cell">Dołączył/a</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.email }}{% if member == user %} <span class="badge bg-secondary">Ty</span>{% endif %}</td>
+                <td>{{ member.get_role_display }}</td>
+                <td class="d-none d-md-table-cell">{{ member.date_joined|date:"d.m.Y" }}</td>
+                <td class="text-end">
+                    {% if user.is_org_admin and member != user %}
+                    <form method="post" action="{% url 'accounts:team-remove' member.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Usunąć {{ member.email }} z organizacji?')">
+                            <i class="bi bi-person-dash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if not user.is_org_admin %}
+<p class="text-muted small">Tylko właściciel lub administrator może dodawać nowe osoby.</p>
+{% endif %}
+{% endblock %}

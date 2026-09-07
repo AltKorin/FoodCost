@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ title }}</h1>
+<div class="card" style="max-width: 480px;">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+            <div class="mb-3">
+                {{ field.label_tag }}
+                {{ field }}
+                {{ field.errors }}
+            </div>
+            {% endfor %}
+            <button class="btn btn-primary" type="submit">Zapisz</button>
+            <a href="{% url 'recipes:context-list' %}" class="btn btn-outline-secondary">Anuluj</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

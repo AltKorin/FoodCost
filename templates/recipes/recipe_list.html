@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Przepisy{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Przepisy</h1>
+    <a href="{% url 'recipes:recipe-create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nowy przepis</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto" style="min-width: 220px;">
+        <input type="search" name="q" class="form-control" placeholder="Szukaj po nazwie…" value="{{ q }}">
+    </div>
+    <div class="col-auto">
+        <select name="meal_type" class="form-select" onchange="this.form.submit()">
+            <option value="">Wszystkie typy</option>
+            {% for value, label in meal_type_choices %}
+            <option value="{{ value }}" {% if value == meal_type %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-secondary" type="submit">Szukaj</button>
+    </div>
+</form>
+
+{% if recipes %}
+<div class="table-responsive">
+    <table class="table table-hover bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Nazwa</th>
+                <th class="d-none d-md-table-cell">Typ</th>
+                <th class="d-none d-md-table-cell">Koszt/porcję</th>
+                <th>FC%</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for recipe in recipes %}
+            <tr>
+                <td><a href="{% url 'recipes:recipe-detail' recipe.pk %}">{{ recipe.name }}</a></td>
+                <td class="d-none d-md-table-cell">{{ recipe.get_meal_type_display }}</td>
+                <td class="d-none d-md-table-cell">{{ recipe.cost_per_portion }} PLN</td>
+                <td>
+                    {% if recipe.food_cost_pct is not None %}
+                    <span class="badge fc-badge fc-{{ recipe.fc_status }}">{{ recipe.food_cost_pct }}%</span>
+                    {% else %}
+                    <span class="badge fc-badge fc-unknown">brak ceny</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <a href="{% url 'recipes:recipe-update' recipe.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'recipes:recipe-delete' recipe.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="fc-empty">
+    <i class="bi bi-journal-text"></i>
+    <p class="mb-3">{% if q or meal_type %}Nic nie pasuje do filtrów.{% else %}Utwórz pierwszy przepis, żeby zobaczyć jego food cost.{% endif %}</p>
+    {% if not q and not meal_type %}<a href="{% url 'recipes:recipe-create' %}" class="btn btn-primary">Utwórz pierwszy przepis</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

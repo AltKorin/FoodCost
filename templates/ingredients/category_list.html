@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Kategorie{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Kategorie</h1>
+    <a href="{% url 'ingredients:category-create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Nowa kategoria</a>
+</div>
+
+{% if categories %}
+<div class="card">
+    <ul class="list-group list-group-flush">
+        {% for category in categories %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ category.name }}</span>
+            <span>
+                <a href="{% url 'ingredients:category-update' category.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                <a href="{% url 'ingredients:category-delete' category.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% else %}
+<div class="fc-empty">
+    <i class="bi bi-tags"></i>
+    <p class="mb-3">Kategorie porządkują składniki (np. Warzywa, Mięso, Nabiał). Opcjonalne, ale ułatwiają nawigację.</p>
+    <a href="{% url 'ingredients:category-create' %}" class="btn btn-primary">Dodaj kategorię</a>
+</div>
+{% endif %}
+{% endblock %}

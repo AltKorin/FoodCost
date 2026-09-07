@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.env
+staticfiles/
+media/*
+!media/.gitkeep
+db.sqlite3
+cloudflared/config.yml
+cloudflared/*.json
+.DS_Store

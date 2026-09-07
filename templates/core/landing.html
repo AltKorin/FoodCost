@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Kalkulator food cost — ile możesz wydać na składniki?{% endblock %}
+{% block extra_head %}
+<meta name="description" content="Darmowy kalkulator food cost dla gastronomii i hoteli. Wpisz cenę dania i docelowy food cost% — od razu zobaczysz maksymalny budżet na składniki, bez liczenia na oko.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Kalkulator food cost",
+  "applicationCategory": "BusinessApplication",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "PLN"},
+  "description": "Darmowy kalkulator food cost — wpisz cenę dania i docelowy food cost%, dostaniesz maksymalny budżet na składniki."
+}
+</script>
+<style>
+    .fc-landing { width: 100%; max-width: 880px; margin: 0 auto; }
+    .fc-landing__hero { text-align: center; padding: 2rem 0 1.5rem; }
+    .fc-landing__hero h1 { font-size: 1.85rem; font-weight: 700; }
+    .fc-landing__hero p { color: #6c757d; font-size: 1.05rem; }
+    .fc-calc { background: #fff; border: 1px solid #e9ecef; border-radius: 0.75rem; padding: 1.75rem; margin-bottom: 2.5rem; }
+    .fc-calc__slider-value { font-size: 1.6rem; font-weight: 700; color: var(--fc-primary); }
+    .fc-calc__result { background: var(--fc-bg); border-radius: 0.5rem; padding: 1.25rem; margin-top: 1.25rem; text-align: center; }
+    .fc-calc__result .value { font-size: 2.2rem; font-weight: 700; }
+    .fc-landing section { margin-bottom: 2rem; }
+    .fc-landing h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+    .fc-landing__cta { text-align: center; padding: 2rem 1.5rem; background: var(--fc-primary); color: #fff; border-radius: 0.75rem; }
+    .fc-landing__cta h2 { color: #fff; }
+    .fc-landing__cta .btn-light { background: #fff; color: var(--fc-primary); font-weight: 600; }
+</style>
+{% endblock %}
+{% block bare_content %}
+<div class="fc-landing">
+    <div class="fc-landing__hero">
+        <span class="d-block mb-2 text-success fw-semibold text-uppercase small"><i class="bi bi-egg-fried"></i> FoodCost — darmowe narzędzie</span>
+        <h1>Ile możesz wydać na składniki, żeby utrzymać food cost?</h1>
+        <p>Koniec liczenia na oko. Wpisz cenę dania i docelowy food cost% — od razu widzisz budżet na składniki.</p>
+    </div>
+
+    <div class="fc-calc" x-data="fcCalculator()">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label" for="fc-price">Cena sprzedaży dania (PLN)</label>
+                <input type="number" id="fc-price" class="form-control form-control-lg" min="0" step="0.5"
+                       x-model.number="price">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label d-flex justify-content-between" for="fc-pct">
+                    <span>Docelowy food cost</span>
+                    <span class="fc-calc__slider-value" x-text="pct + '%'"></span>
+                </label>
+                <input type="range" id="fc-pct" class="form-range" min="15" max="45" step="1"
+                       x-model.number="pct">
+            </div>
+        </div>
+
+        <div class="fc-calc__result">
+            <div class="text-muted small mb-1">Maksymalny koszt składników na porcję</div>
+            <div class="value text-success" x-text="budget.toFixed(2) + ' PLN'"></div>
+            <div class="text-muted small mt-2">
+                Marża brutto: <strong x-text="(price - budget).toFixed(2) + ' PLN'"></strong>
+                (<span x-text="(100 - pct).toFixed(0)"></span>% ceny)
+            </div>
+        </div>
+    </div>
+
+    <section>
+        <h2>Jak liczy ten kalkulator</h2>
+        <p>
+            Food cost% to udział kosztu składników w cenie sprzedaży dania. Jeśli chcesz
+            utrzymać np. 30% food cost przy cenie 35 zł, budżet na składniki to
+            <code>35 zł × 30% = 10,50 zł</code>. Powyżej tego progu danie „zjada" marżę,
+            poniżej — zostawia miejsce na koszty stałe i zysk.
+        </p>
+    </section>
+
+    <section>
+        <h2>To liczy jeden przepis. A cała karta?</h2>
+        <p>
+            Ten kalkulator daje orientacyjny budżet w kilka sekund — dobry punkt startowy przy
+            wycenie nowego dania. Żeby policzyć rzeczywisty koszt konkretnego przepisu
+            (z realnymi cenami składników od Twoich dostawców, yield factorem na odpad i
+            historią zmian cen), potrzebujesz czegoś więcej niż suwaka.
+        </p>
+    </section>
+
+    <div class="fc-landing__cta">
+        <h2>Policz realny food cost swojej karty — za darmo</h2>
+        <p>Składniki, dostawcy, przepisy, food cost na żywo. Bez karty kredytowej.</p>
+        <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">Załóż darmowe konto</a>
+    </div>
+
+    <section class="mt-4">
+        <h2>Najczęstsze pytania</h2>
+        <p><strong>Ile powinien wynosić food cost?</strong><br>
+        Zależy od kontekstu — karta a la carte zwykle 28–32%, bufet czy imprezy okolicznościowe
+        bywają wyżej. W pełnej wersji FoodCost ustawiasz docelowy % osobno dla każdego kontekstu
+        serwowania (karta, bufet, grupy).</p>
+        <p><strong>Czy ten kalkulator zapisuje moje dane?</strong><br>
+        Nie — liczy wyłącznie w przeglądarce, nic nie wysyłamy na serwer.</p>
+    </section>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function fcCalculator() {
+    return {
+        price: 35,
+        pct: 30,
+        get budget() {
+            return (this.price || 0) * (this.pct / 100);
+        },
+    };
+}
+</script>
+{% endblock %}

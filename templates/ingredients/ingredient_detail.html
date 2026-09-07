@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ ingredient.name }}{% endblock %}
+{% block content %}
+<p class="mb-1"><a href="{% url 'ingredients:ingredient-list' %}">← Wszystkie składniki</a></p>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">{{ ingredient.name }}</h1>
+        <p class="text-muted mb-0">
+            {{ ingredient.category|default:"bez kategorii" }} · jednostka bazowa: {{ ingredient.get_base_unit_display }}
+            {% if not ingredient.is_active %} · <span class="badge bg-secondary">nieaktywny</span>{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'ingredients:ingredient-update' ingredient.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edytuj</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-header">Aktualne ceny</div>
+            {% if prices %}
+            <ul class="list-group list-group-flush">
+                {% for price in prices %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ price.supplier.name }}</span>
+                    <span>
+                        <strong>{{ price.price_per_base_unit }} PLN</strong> / {{ ingredient.get_base_unit_display }}
+                        <span class="text-muted small">({{ price.price }} PLN / {{ price.get_unit_display }}{% if price.package_size %} × {{ price.package_size }}{% endif %})</span>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="card-body text-muted">Brak zapisanych cen. Dodaj pierwszą po prawej.</div>
+            {% endif %}
+        </div>
+
+        {% if price_history %}
+        <div class="card">
+            <div class="card-header">Historia cen</div>
+            <ul class="list-group list-group-flush">
+                {% for price in price_history %}
+                <li class="list-group-item small text-muted d-flex justify-content-between">
+                    <span>{{ price.supplier.name }} — {{ price.price_per_base_unit }} PLN / {{ ingredient.get_base_unit_display }}</span>
+                    <span>{{ price.valid_from|date:"d.m.Y" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">Dodaj / zaktualizuj cenę</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    {% for field in form %}
+                    {% if field.name == 'is_netto' %}
+                    <div class="form-check mb-3">
+                        {{ field }}
+                        {{ field.label_tag }}
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {{ field.errors }}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    <button class="btn btn-primary w-100" type="submit">Zapisz cenę</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

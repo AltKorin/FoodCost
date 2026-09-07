@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">{{ title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="card mb-3">
+        <div class="card-body row g-3">
+            <div class="col-md-6">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {{ form.name.errors }}
+            </div>
+            <div class="col-md-3">
+                {{ form.package_price_per_person.label_tag }}
+                {{ form.package_price_per_person }}
+            </div>
+            <div class="col-md-3">
+                {{ form.target_fc_pct.label_tag }}
+                {{ form.target_fc_pct }}
+            </div>
+            <div class="col-12">
+                {{ form.notes.label_tag }}
+                {{ form.notes }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Dania w menu</div>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle" id="fc-menu-item-rows">
+                <thead>
+                    <tr>
+                        <th style="min-width: 240px;">Przepis (danie)</th>
+                        <th style="width: 120px;">Ilość / gościa</th>
+                        <th style="width: 110px;">Koszt (podgląd)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ formset.management_form }}
+                    {% for item_form in formset %}
+                    <tr class="fc-mi-row">
+                        <td>
+                            {{ item_form.id }}
+                            {{ item_form.non_field_errors }}
+                            {{ item_form.recipe }}
+                            {{ item_form.recipe.errors }}
+                        </td>
+                        <td>{{ item_form.quantity }}</td>
+                        <td class="fc-mi-cost text-muted small">—</td>
+                        <td>
+                            {% if item_form.DELETE %}
+                            <label class="small text-danger">{{ item_form.DELETE }} usuń</label>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="fc-add-menu-row">
+                <i class="bi bi-plus-lg"></i> Dodaj kolejne danie
+            </button>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Zapisz menu</button>
+    <a href="{% url 'recipes:menu-list' %}" class="btn btn-outline-secondary">Anuluj</a>
+</form>
+
+<table class="d-none"><tbody id="fc-empty-menu-item-template">
+    <tr class="fc-mi-row">
+        <td>{{ formset.empty_form.id }}{{ formset.empty_form.recipe }}</td>
+        <td>{{ formset.empty_form.quantity }}</td>
+        <td class="fc-mi-cost text-muted small">—</td>
+        <td><label class="small text-danger">{{ formset.empty_form.DELETE }} usuń</label></td>
+    </tr>
+</tbody></table>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Podgląd kosztu — koszt/porcję każdego przepisu jest już znany po stronie
+// serwera (data-cost na <option>), więc liczymy w JS bez żadnego fetcha.
+function fcMenuCost(row) {
+    const select = row.querySelector('select[name$="-recipe"]');
+    const qtyInput = row.querySelector('input[name$="-quantity"]');
+    const cell = row.querySelector('.fc-mi-cost');
+    const option = select.options[select.selectedIndex];
+    const cost = option ? parseFloat(option.dataset.cost) : NaN;
+    const qty = parseFloat(qtyInput.value);
+    if (!option || !option.value || isNaN(cost) || !qty) {
+        cell.textContent = '—';
+        return;
+    }
+    cell.textContent = (cost * qty).toFixed(2) + ' PLN';
+    if (option.dataset.hasCost === 'false') {
+        cell.textContent += ' (brak kosztu)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    function wireRow(row) {
+        row.querySelector('select[name$="-recipe"]').addEventListener('change', () => fcMenuCost(row));
+        row.querySelector('input[name$="-quantity"]').addEventListener('input', () => fcMenuCost(row));
+        fcMenuCost(row);
+    }
+    document.querySelectorAll('#fc-menu-item-rows .fc-mi-row').forEach(wireRow);
+
+    const addBtn = document.getElementById('fc-add-menu-row');
+    const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+    const template = document.getElementById('fc-empty-menu-item-template').querySelector('tr');
+    const tbody = document.querySelector('#fc-menu-item-rows tbody');
+
+    addBtn.addEventListener('click', () => {
+        const index = parseInt(totalFormsInput.value, 10);
+        const html = template.outerHTML.replace(/__prefix__/g, index);
+        tbody.insertAdjacentHTML('beforeend', html);
+        wireRow(tbody.lastElementChild);
+        totalFormsInput.value = index + 1;
+    });
+});
+</script>
+{% endblock %}
