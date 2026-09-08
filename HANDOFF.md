@@ -111,13 +111,23 @@ ręczny dostęp poza kontem demo).
    lokalnego dev na maszynie 192.168.1.238, nie ma go na `kelnerzy` (bazowy
    `docker-compose.yml` ma nginx bez `ports:` w ogóle — wzorzec skopiowany
    z `agencja-kelnerska`, zero otwartych portów poza tunelem).
-4. **OCR faktur (Faza 3)** — port z `legacy-foodcost/foodcost/foodcost/ingredients/`
-   (`ocr_service.py` + `invoice_views.py`) do `apps/ingredients/` w fc.sudomie.pl.
-   Blokuje przejście Michała z `foodcost.sudomie.pl` na fc.sudomie.pl.
+4. **OCR faktur (Faza 3) — WDROŻONE na produkcję 2026-09-08.** Port z
+   `legacy-foodcost/foodcost/foodcost/ingredients/` do `apps/ingredients/`
+   (`ocr_service.py`, `invoice_views.py`), URL-e pod `/ingredients/invoice/...`,
+   gate `@pro_required` (dekorator w `apps/accounts/decorators.py`) na
+   `Organization.plan == 'pro'`. Link w sidebarze widoczny tylko dla planu Pro.
+   Organizacja Niedźwiadka przemianowana na **"Hotel Niedźwiadek SPA & Natura"**
+   i przestawiona na `plan='pro'` (jedyna organizacja z dostępem na razie).
+   **Brakuje `OPENAI_API_KEY` w `.env` na `kelnerzy`** — bez niego OCR
+   pokaże czytelny błąd zamiast się wywalić, ale nie zadziała. Dodać klucz
+   przed pokazaniem Michałowi.
 5. **Migracja danych Hotelu Niedźwiadek** — realne ceny/składniki z produkcji
    `foodcost.sudomie.pl` (MySQL/GoDaddy) do organizacji Niedźwiadek w
    fc.sudomie.pl (Postgres) — dopiero po zgodzie Michała, seed testowy
    (`niedzwiadek-test`) jest przestarzały i nie nadaje się do podmiany 1:1.
+6. **Monetyzacja OCR dla reszty klientów** — na razie tylko ręczne przełączenie
+   `plan='pro'` w shellu. Docelowo albo płatność per-token/wgranie, albo prosty
+   abonament — nierozstrzygnięte, do decyzji jak będzie pierwszy klient płacący.
 
 ---
 

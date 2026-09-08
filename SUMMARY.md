@@ -2,6 +2,58 @@
 
 ---
 
+## Sesja 2026-09-08 (2) — Port OCR faktur + wdrożenie na produkcję
+
+Kontynuacja poprzedniej sesji (archiwizacja foodcost.sudomie.pl). User: "zacznij
+port OCR. Ale to nie jest opcja którą chcemy dawać za darmo bo wymaga tokenów
+[...] Najpierw wersja tylko dla Michała i Niedźwiadka."
+
+### Zrobiono
+- Port `ocr_service.py` (bez zmian — był już generyczny) i `invoice_views.py`
+  (przepisany pod multi-tenant: `organization` scoping na Ingredient/Supplier/
+  SupplierPrice) z `legacy-foodcost/` do `apps/ingredients/`.
+- Gate na funkcję: reużyte istniejące pole `Organization.plan` (free/pro) —
+  zero nowego modelu, zero systemu płatności. Dekorator `@pro_required` w
+  `apps/accounts/decorators.py`, link w sidebarze warunkowy na `plan == 'pro'`.
+- `Organization` pk=3 (`niedzwiadek-test`) → nazwa **"Hotel Niedźwiadek SPA &
+  Natura"**, `plan='pro'`.
+- Weryfikacja lokalna przed wdrożeniem: zbudowany obraz Dockera lokalnie,
+  `manage.py check` (bez bazy) czysto, parsowanie wszystkich 3 szablonów
+  (`base.html` + 2 nowe) przez `get_template()` czysto.
+- Wdrożone na `kelnerzy` (`/opt/fc-sudomie-pl`): `git archive` → tar → scp →
+  rozpakowanie → `docker compose up -d --build web`. Nowe zależności
+  (`openai`, `PyMuPDF`) zainstalowane, migracje/collectstatic przeszły,
+  gunicorn wstał, `curl https://fc.sudomie.pl/` → 200.
+
+### Zadziałało
+- Testowanie w lokalnie zbudowanym obrazie Dockera bez żywej bazy —
+  `manage.py check` i `get_template()` nie potrzebują połączenia z Postgresem,
+  więc dało się złapać błędy składni/importów/szablonów przed dotknięciem
+  produkcji, mimo braku lokalnego środowiska dev z `.env`.
+- Reużycie pola `plan` zamiast nowego `ocr_enabled` bool — organizacja i tak
+  miała już rozróżnienie free/pro w modelu, więc gate kosztował zero migracji.
+
+### Nie zadziałało / czekało na usera
+- Pierwsza próba `scp` na `kelnerzy` zablokowana przez auto-mode classifier
+  (akcja na produkcji) — wymagało jawnego "wdróż OCR" od usera zanim spróbować
+  ponownie (druga próba przeszła bez problemu, to była kwestia potwierdzenia,
+  nie techniczna blokada).
+
+### Następne kroki
+- **Brak `OPENAI_API_KEY` w `.env` na `kelnerzy`** — dodać klucz przed
+  pokazaniem funkcji Michałowi, inaczej dostanie czytelny błąd zamiast wyniku.
+- Migracja realnych danych Niedźwiadka z produkcji `foodcost.sudomie.pl`
+  (MySQL) do fc.sudomie.pl (Postgres) — po stronie Michała potwierdzenie
+  przejścia.
+- Model monetyzacji OCR dla przyszłych klientów (nie-Niedźwiadek) — token-based
+  czy abonament, nierozstrzygnięte.
+- User rozważał migrację `fc.sudomie.pl` z `kelnerzy` na nowy ProxMox z powodu
+  planowanego mailingu do CRM (43 osoby / 84 firmy) — ustalone, że to za mały
+  wolumen żeby to uzasadniać (LXC ma dziś 13% RAM, 0% CPU); swap na `kelnerzy`
+  zapchany w 87% niezależnie od tego wątku, warty sprawdzenia osobno.
+
+---
+
 ## Sesja 2026-09-08 — Konsolidacja z foodcost.sudomie.pl (archiwizacja)
 
 User: „robiliśmy wczoraj fc.sudomie.pl a oprócz tego jest foodcost.sudomie.pl
