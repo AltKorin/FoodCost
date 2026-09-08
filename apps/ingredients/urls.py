@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, invoice_views
+from . import views, invoice_views, export_views
 
 app_name = 'ingredients'
 
@@ -7,6 +7,10 @@ urlpatterns = [
     # Faktury (OCR, plan Pro)
     path('invoice/upload/', invoice_views.invoice_upload, name='invoice-upload'),
     path('invoice/confirm/', invoice_views.invoice_confirm, name='invoice-confirm'),
+
+    # Eksport
+    path('export/csv/', export_views.export_ingredients_csv, name='export-csv'),
+    path('export/excel/', export_views.export_ingredients_excel, name='export-excel'),
 
     # Składniki
     path('', views.IngredientListView.as_view(), name='ingredient-list'),

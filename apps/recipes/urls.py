@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, export_views
 
 app_name = 'recipes'
 
@@ -18,6 +18,7 @@ urlpatterns = [
     path('menu/', views.MenuListView.as_view(), name='menu-list'),
     path('menu/new/', views.menu_create, name='menu-create'),
     path('menu/<int:pk>/', views.menu_detail, name='menu-detail'),
+    path('menu/<int:pk>/export/', export_views.menu_export_word, name='menu-export-word'),
     path('menu/<int:pk>/edit/', views.menu_update, name='menu-update'),
     path('menu/<int:pk>/delete/', views.MenuDeleteView.as_view(), name='menu-delete'),
 ]

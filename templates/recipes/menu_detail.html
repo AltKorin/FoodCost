@@ -7,7 +7,10 @@
         <h1 class="h3 mb-0">{{ menu.name }}</h1>
         <p class="text-muted mb-0">Cel FC%: {{ menu.target_fc_pct }}%</p>
     </div>
-    <a href="{% url 'recipes:menu-update' menu.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edytuj</a>
+    <div class="d-flex gap-2">
+        <a href="{% url 'recipes:menu-export-word' menu.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-filetype-docx"></i> Eksportuj do Word</a>
+        <a href="{% url 'recipes:menu-update' menu.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edytuj</a>
+    </div>
 </div>
 
 {% if not is_cost_complete %}
