@@ -14,13 +14,14 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label fw-medium">Dostawca *</label>
-                        <select name="supplier_id" class="form-select" required>
-                            <option value="">— wybierz dostawcę —</option>
+                        <label class="form-label fw-medium">Dostawca</label>
+                        <select name="supplier_id" class="form-select">
+                            <option value="">— wykryj automatycznie z faktury —</option>
                             {% for s in suppliers %}
                             <option value="{{ s.pk }}">{{ s.name }}</option>
                             {% endfor %}
                         </select>
+                        <div class="form-text">Zostaw puste — AI odczyta nazwę dostawcy z faktury i dopasuje albo zaproponuje nowego.</div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label fw-medium">Plik faktury lub zdjęcie *</label>

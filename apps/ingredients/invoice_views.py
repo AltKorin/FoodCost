@@ -3,6 +3,7 @@
 Funkcja płatna (plan Pro) — każde wgranie faktury to koszt tokenów OpenAI Vision.
 """
 import os
+import re
 from decimal import Decimal
 
 from django.contrib import messages
@@ -17,6 +18,27 @@ from .ocr_service import (
 )
 
 
+def _match_supplier(name, suppliers_qs):
+    """Dopasowuje nazwę dostawcy z faktury do istniejących Supplier po
+    overlapie słów — ten sam pomysł co fuzzy_match_ingredients, tylko na
+    pojedynczą nazwę zamiast listy pozycji."""
+    if not name:
+        return None
+    name_words = set(re.findall(r'\w{3,}', name.lower()))
+    if not name_words:
+        return None
+    best, best_score = None, 0
+    for s in suppliers_qs:
+        s_words = set(re.findall(r'\w{3,}', s.name.lower()))
+        if not s_words:
+            continue
+        score = len(name_words & s_words) / len(name_words)
+        if score > best_score and score >= 0.5:
+            best_score = score
+            best = s
+    return best
+
+
 @login_required
 @setup_required
 @pro_required
@@ -26,12 +48,8 @@ def invoice_upload(request):
     suppliers = Supplier.objects.filter(organization=org)
 
     if request.method == 'POST':
-        supplier_id = request.POST.get('supplier_id')
+        supplier_id = request.POST.get('supplier_id')  # opcjonalny — puste = wykryj z faktury
         upload_file = request.FILES.get('invoice_file')
-
-        if not supplier_id:
-            messages.error(request, 'Wybierz dostawcę.')
-            return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
 
         if not upload_file:
             messages.error(request, 'Wybierz plik faktury lub zdjęcie.')
@@ -64,6 +82,13 @@ def invoice_upload(request):
             ingredients_qs = Ingredient.objects.filter(organization=org, is_active=True)
             items = fuzzy_match_ingredients(items, ingredients_qs)
 
+            supplier_name = raw_data.get('supplier_name')
+            if supplier_id:
+                resolved_supplier_id = int(supplier_id)
+            else:
+                matched_supplier = _match_supplier(supplier_name, suppliers)
+                resolved_supplier_id = matched_supplier.pk if matched_supplier else None
+
             request.session['invoice_items'] = [
                 {
                     'name': i['name'],
@@ -79,9 +104,9 @@ def invoice_upload(request):
                 }
                 for i in items
             ]
-            request.session['invoice_supplier_id'] = int(supplier_id)
+            request.session['invoice_supplier_id'] = resolved_supplier_id
             request.session['invoice_meta'] = {
-                'supplier_name': raw_data.get('supplier_name'),
+                'supplier_name': supplier_name,
                 'invoice_number': raw_data.get('invoice_number'),
                 'invoice_date': raw_data.get('invoice_date'),
             }
@@ -105,17 +130,26 @@ def invoice_confirm(request):
     """Krok 2 — podgląd wyciągniętych cen, korekta dopasowań, zapis."""
     org = request.user.organization
     items = request.session.get('invoice_items')
-    supplier_id = request.session.get('invoice_supplier_id')
+    session_supplier_id = request.session.get('invoice_supplier_id')  # może być None — nie wykryto
     meta = request.session.get('invoice_meta', {})
 
-    if not items or not supplier_id:
+    if not items:
         messages.error(request, 'Brak danych faktury. Wgraj plik ponownie.')
         return redirect('ingredients:invoice-upload')
 
-    supplier = get_object_or_404(Supplier, pk=supplier_id, organization=org)
+    suppliers_all = Supplier.objects.filter(organization=org).order_by('name')
     ingredients_all = Ingredient.objects.filter(organization=org, is_active=True).order_by('name')
 
     if request.method == 'POST':
+        supplier_choice = request.POST.get('supplier_choice')
+        if supplier_choice == '__new__':
+            supplier_name = (meta.get('supplier_name') or 'Nowy dostawca').strip()[:200]
+            supplier = Supplier.objects.filter(organization=org, name__iexact=supplier_name).first()
+            if not supplier:
+                supplier = Supplier.objects.create(organization=org, name=supplier_name)
+        else:
+            supplier = get_object_or_404(Supplier, pk=supplier_choice, organization=org)
+
         source_note = f"Faktura {meta.get('invoice_number') or ''} {meta.get('invoice_date') or ''} ({supplier.name})".strip()
         saved_count = 0
         skipped_count = 0
@@ -170,14 +204,15 @@ def invoice_confirm(request):
                 continue
 
         del request.session['invoice_items']
-        del request.session['invoice_supplier_id']
+        request.session.pop('invoice_supplier_id', None)
         request.session.pop('invoice_meta', None)
 
         messages.success(request, f'Zapisano {saved_count} cen z faktury. Pominięto: {skipped_count}.')
         return redirect('ingredients:supplier-list')
 
     context = {
-        'supplier': supplier,
+        'session_supplier_id': session_supplier_id,
+        'suppliers_all': suppliers_all,
         'items': items,
         'meta': meta,
         'ingredients_all': ingredients_all,

@@ -14,8 +14,16 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
     <div>
         <h4 class="mb-1"><i class="bi bi-check2-square"></i> Potwierdź ceny z faktury</h4>
-        <div class="text-muted small">
-            Dostawca: <strong>{{ supplier.name }}</strong>
+        <div class="text-muted small d-flex align-items-center gap-2 flex-wrap">
+            <span>Dostawca:</span>
+            <select name="supplier_choice" form="confirmForm" class="form-select form-select-sm w-auto">
+                <option value="__new__" {% if not session_supplier_id %}selected{% endif %}>
+                    + Utwórz nowy{% if meta.supplier_name %}: "{{ meta.supplier_name }}"{% endif %}
+                </option>
+                {% for s in suppliers_all %}
+                <option value="{{ s.pk }}" {% if session_supplier_id == s.pk %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
             {% if meta.invoice_number %} · Faktura: <strong>{{ meta.invoice_number }}</strong>{% endif %}
             {% if meta.invoice_date %} · Data: <strong>{{ meta.invoice_date }}</strong>{% endif %}
         </div>
@@ -27,6 +35,13 @@
         </button>
     </div>
 </div>
+{% if not session_supplier_id %}
+<div class="alert alert-warning py-2 small mb-3">
+    <i class="bi bi-exclamation-triangle"></i>
+    Nie rozpoznano dostawcy z bazy{% if meta.supplier_name %} (na fakturze: "{{ meta.supplier_name }}"){% endif %} —
+    domyślnie zostanie utworzony nowy. Wybierz istniejącego z listy, jeśli już go masz pod inną nazwą.
+</div>
+{% endif %}
 
 <div class="alert alert-info py-2 small mb-3">
     <i class="bi bi-info-circle"></i>
