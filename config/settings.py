@@ -24,6 +24,10 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+# OCR faktur (Faza 3) — funkcja płatna (plan Pro), pusty klucz = feature po prostu
+# nie zadziała dla organizacji z dostępem, nie blokuje startu reszty aplikacji.
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
 INSTALLED_APPS = [
     'jazzmin',  # MUSI być przed django.contrib.admin
     'django.contrib.admin',

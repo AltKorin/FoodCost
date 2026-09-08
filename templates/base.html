@@ -39,6 +39,11 @@
             <a href="{% url 'ingredients:category-list' %}" class="{% if 'categories' in request.path %}active{% endif %}">
                 <i class="bi bi-tags"></i> Kategorie
             </a>
+            {% if user.organization.plan == 'pro' %}
+            <a href="{% url 'ingredients:invoice-upload' %}" class="{% if 'invoice' in request.path %}active{% endif %}">
+                <i class="bi bi-camera"></i> Faktura (OCR)
+            </a>
+            {% endif %}
         </nav>
     </aside>
 

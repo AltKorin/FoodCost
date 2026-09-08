@@ -1,9 +1,13 @@
 from django.urls import path
-from . import views
+from . import views, invoice_views
 
 app_name = 'ingredients'
 
 urlpatterns = [
+    # Faktury (OCR, plan Pro)
+    path('invoice/upload/', invoice_views.invoice_upload, name='invoice-upload'),
+    path('invoice/confirm/', invoice_views.invoice_confirm, name='invoice-confirm'),
+
     # Składniki
     path('', views.IngredientListView.as_view(), name='ingredient-list'),
     path('new/', views.IngredientCreateView.as_view(), name='ingredient-create'),
