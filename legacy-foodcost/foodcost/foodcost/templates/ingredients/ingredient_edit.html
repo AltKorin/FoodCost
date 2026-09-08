@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{% if ingredient %}Edytuj składnik{% else %}Nowy składnik{% endif %}{% endblock %}
+{% block page_title_mobile %}{% if ingredient %}Edytuj{% else %}Nowy składnik{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+<button form="ingredientForm" type="submit" class="btn btn-success btn-sm ms-auto">
+    <i class="bi bi-check-lg"></i> Zapisz
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-block mb-4">
+    <h4>{% if ingredient %}<i class="bi bi-pencil"></i> Edytuj: {{ ingredient.name }}{% else %}<i class="bi bi-plus-circle"></i> Nowy składnik{% endif %}</h4>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <form id="ingredientForm" method="post">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Nazwa składnika *</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ ingredient.name|default:'' }}" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Kategoria</label>
+                        <select name="category" class="form-select">
+                            <option value="">— bez kategorii —</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.pk }}"
+                                {% if ingredient and ingredient.category_id == cat.pk %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Jednostka bazowa</label>
+                        <select name="base_unit" class="form-select">
+                            {% for val, label in units %}
+                            <option value="{{ val }}"
+                                {% if ingredient and ingredient.base_unit == val %}selected{% endif %}
+                                {% if not ingredient and val == 'kg' %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Jednostka w której kupujesz i wyceniasz ten składnik.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Uwagi</label>
+                        <textarea name="notes" class="form-control" rows="2"
+                                  placeholder="np. sezonowy, zamiennik możliwy, przechowywać w chłodni">{{ ingredient.notes|default:'' }}</textarea>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Zapisz
+                    </button>
+                    <a href="{% url 'ingredient_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+                    {% if ingredient %}
+                    <a href="{% url 'ingredient_delete' ingredient.pk %}"
+                       class="btn btn-outline-danger ms-auto">
+                        <i class="bi bi-trash"></i> Usuń
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

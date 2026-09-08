@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Przepisy{% endblock %}
+{% block page_title_mobile %}Przepisy{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'recipe_create' %}" class="btn btn-primary btn-sm ms-auto">
+    <i class="bi bi-plus"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-journal-text"></i> Przepisy</h4>
+    <a href="{% url 'recipe_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nowy przepis
+    </a>
+</div>
+
+<!-- Filtry -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-sm-4">
+                <input type="text" name="q" value="{{ request.GET.q }}"
+                       class="form-control form-control-sm" placeholder="Szukaj dania...">
+            </div>
+            <div class="col-6 col-sm-3">
+                <select name="context" class="form-select form-select-sm">
+                    <option value="">Wszystkie konteksty</option>
+                    {% for value, label in contexts %}
+                    <option value="{{ value }}" {% if current_context == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-sm-3">
+                <select name="meal_type" class="form-select form-select-sm">
+                    <option value="">Wszystkie typy</option>
+                    {% for value, label in meal_types %}
+                    <option value="{{ value }}" {% if current_meal == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-2">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Filtruj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Desktop tabela -->
+<div class="card d-none d-md-block">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Danie</th>
+                    <th>Typ</th>
+                    <th>Kontekst</th>
+                    <th class="text-end">Koszt/porcja</th>
+                    <th class="text-end">Cena sprzedaży</th>
+                    <th class="text-end">FC%</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recipes_data %}
+                <tr onclick="location.href='{% url 'recipe_detail' item.recipe.pk %}'" style="cursor:pointer">
+                    <td class="fw-medium">{{ item.recipe.name }}</td>
+                    <td><span class="badge bg-secondary">{{ item.recipe.get_meal_type_display }}</span></td>
+                    <td>
+                        {% for ctx in item.recipe.contexts.all %}
+                        <span class="badge bg-info text-dark">{{ ctx.get_context_display }}</span>
+                        {% empty %}
+                        <span class="text-muted small">—</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-end">
+                        {% if item.cost_per_portion %}{{ item.cost_per_portion }} PLN
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if item.recipe.selling_price %}{{ item.recipe.selling_price }} PLN
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if item.fc_percentage %}
+                        <span class="fw-bold fc-{{ item.status }}">{{ item.fc_percentage }}%</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if item.status == 'danger' %}<i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                        {% elif item.status == 'warning' %}<i class="bi bi-exclamation-circle text-warning"></i>
+                        {% elif item.status == 'ok' %}<i class="bi bi-check-circle text-success"></i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">Brak przepisów pasujących do filtrów</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Mobile karty -->
+<div class="d-md-none">
+    {% for item in recipes_data %}
+    <a href="{% url 'recipe_detail' item.recipe.pk %}" class="text-decoration-none">
+        <div class="card mb-2 {% if item.status == 'danger' %}border-danger{% elif item.status == 'warning' %}border-warning{% endif %}">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="fw-semibold text-dark">{{ item.recipe.name }}</div>
+                        <div class="text-muted small">{{ item.recipe.get_meal_type_display }}
+                            {% for ctx in item.recipe.contexts.all %}
+                            · {{ ctx.get_context_display }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        {% if item.fc_percentage %}
+                        <div class="fw-bold fc-{{ item.status }} fs-5">{{ item.fc_percentage }}%</div>
+                        <div class="text-muted small">{{ item.cost_per_portion }} PLN/porcja</div>
+                        {% else %}
+                        <span class="text-muted small">brak danych</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="text-center text-muted py-4">Brak przepisów</div>
+    {% endfor %}
+</div>
+{% endblock %}

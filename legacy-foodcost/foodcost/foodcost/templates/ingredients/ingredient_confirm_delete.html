@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Usuń składnik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white fw-semibold">
+                <i class="bi bi-exclamation-triangle"></i> Potwierdź usunięcie
+            </div>
+            <div class="card-body">
+                <p>Czy na pewno chcesz usunąć składnik <strong>{{ ingredient.name }}</strong>?</p>
+                <p class="text-muted small">Składnik zostanie dezaktywowany — historia cen zostanie zachowana. Przepisy które go używają nie zostaną zmienione.</p>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Tak, usuń
+                    </button>
+                </form>
+                <a href="{% url 'ingredient_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

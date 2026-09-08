@@ -111,6 +111,13 @@ ręczny dostęp poza kontem demo).
    lokalnego dev na maszynie 192.168.1.238, nie ma go na `kelnerzy` (bazowy
    `docker-compose.yml` ma nginx bez `ports:` w ogóle — wzorzec skopiowany
    z `agencja-kelnerska`, zero otwartych portów poza tunelem).
+4. **OCR faktur (Faza 3)** — port z `legacy-foodcost/foodcost/foodcost/ingredients/`
+   (`ocr_service.py` + `invoice_views.py`) do `apps/ingredients/` w fc.sudomie.pl.
+   Blokuje przejście Michała z `foodcost.sudomie.pl` na fc.sudomie.pl.
+5. **Migracja danych Hotelu Niedźwiadek** — realne ceny/składniki z produkcji
+   `foodcost.sudomie.pl` (MySQL/GoDaddy) do organizacji Niedźwiadek w
+   fc.sudomie.pl (Postgres) — dopiero po zgodzie Michała, seed testowy
+   (`niedzwiadek-test`) jest przestarzały i nie nadaje się do podmiany 1:1.
 
 ---
 
@@ -126,7 +133,20 @@ Darmowy SaaS do zarządzania food costem dla branży HoReCa.
 
 **Polityka prywatności:** Użytkownicy dobrowolnie przesyłają dane cenowe w zamian za darmowe narzędzie. Polityka explicite pozwala na anonimową agregację cen. `accepted_tos_at` na modelu Organization.
 
-Nie mylić z `foodcost.sudomie.pl` (Hotel Niedźwiadek, GoDaddy) — tamten projekt osobny, nie ruszamy.
+**2026-09-08 — konsolidacja:** `foodcost.sudomie.pl` (Hotel Niedźwiadek, GoDaddy/MySQL,
+kod Konrada dla szefa kuchni Michała) przeniesiony jako archiwum do
+`legacy-foodcost/` w tym repo — produkcja na GoDaddy nadal działa bez zmian,
+to tylko kopia kodu/kontekstu w jednym miejscu. Michał widział fc.sudomie.pl
+i wolałby przejść na tę wersję, pod warunkiem że dostanie **OCR faktur**
+(wgraj PDF/zdjęcie faktury → OpenAI Vision → auto-uzupełnione ceny) —
+funkcja istnieje w `legacy-foodcost/foodcost/foodcost/ingredients/ocr_service.py`,
+`invoice_views.py`, `spreadsheet_service.py` jako gotowy wzorzec do
+przeniesienia (Faza 3, patrz sekcja "Co zostało do zrobienia" niżej).
+Dane testowe organizacji `niedzwiadek-test` w fc.sudomie.pl są ze starego
+seeda/importu menu — realne aktualne ceny/składniki żyją tylko w produkcji
+`foodcost.sudomie.pl` (MySQL na GoDaddy), do migracji dopiero gdy Michał
+faktycznie przechodzi na fc.sudomie.pl (nie robić przed jego zgodą — to
+włącza/wyłącza narzędzie, którego używa codziennie).
 
 ---
 

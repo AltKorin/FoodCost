@@ -1,0 +1,67 @@
+[
+  {
+    "model": "ingredients.category",
+    "pk": 1,
+    "fields": { "name": "Mięso i drób", "order": 1 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 2,
+    "fields": { "name": "Ryby i owoce morza", "order": 2 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 3,
+    "fields": { "name": "Nabiał i jaja", "order": 3 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 4,
+    "fields": { "name": "Warzywa i owoce", "order": 4 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 5,
+    "fields": { "name": "Pieczywo i mąka", "order": 5 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 6,
+    "fields": { "name": "Oleje i tłuszcze", "order": 6 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 7,
+    "fields": { "name": "Przyprawy i zioła", "order": 7 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 8,
+    "fields": { "name": "Makarony, ryż, kasze", "order": 8 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 9,
+    "fields": { "name": "Napoje i alkohole", "order": 9 }
+  },
+  {
+    "model": "ingredients.category",
+    "pk": 10,
+    "fields": { "name": "Inne", "order": 10 }
+  },
+  {
+    "model": "recipes.recipecontext",
+    "pk": 1,
+    "fields": { "context": "buffet", "target_fc_percentage": "28.0" }
+  },
+  {
+    "model": "recipes.recipecontext",
+    "pk": 2,
+    "fields": { "context": "group", "target_fc_percentage": "30.0" }
+  },
+  {
+    "model": "recipes.recipecontext",
+    "pk": 3,
+    "fields": { "context": "carte", "target_fc_percentage": "32.0" }
+  }
+]

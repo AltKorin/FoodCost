@@ -1,0 +1,678 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}{% if recipe %}Edytuj{% else %}Nowy przepis{% endif %}{% endblock %}
+{% block page_title_mobile %}{% if recipe %}Edytuj przepis{% else %}Nowy przepis{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+<button form="recipeForm" type="submit" class="btn btn-success btn-sm ms-auto">
+    <i class="bi bi-check-lg"></i> Zapisz
+</button>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fc-live-box {
+        position: sticky; top: 1rem;
+        background: #fff; border-radius: 12px;
+        border: 2px solid #dee2e6;
+        transition: border-color 0.3s;
+    }
+    .fc-live-box.status-ok { border-color: #198754; }
+    .fc-live-box.status-warning { border-color: #fd7e14; }
+    .fc-live-box.status-danger { border-color: #dc3545; }
+
+    .ingredient-row { background: #fff; border-radius: 8px; border: 1px solid #dee2e6; }
+    .ingredient-row:hover { border-color: #0d6efd; }
+
+    #ingredientRows .ingredient-row + .ingredient-row { margin-top: 0.5rem; }
+
+    .cost-badge {
+        font-size: 0.8rem; background: #f0f9ff;
+        border: 1px solid #bae6fd; border-radius: 6px;
+        padding: 2px 8px; color: #0369a1;
+    }
+    .cost-badge.no-price { background: #fef9c3; border-color: #fde68a; color: #92400e; }
+
+    /* FC bar — mobile only */
+    .fc-bar-base {
+        background: #1a1a2e; color: #fff;
+        border-radius: 10px;
+        padding: .75rem 1rem; margin-top: 1rem;
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: .88rem;
+    }
+    .fc-bar-fixed {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #1a1a2e; color: #fff;
+        padding: .65rem 1rem;
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: .88rem;
+        box-shadow: 0 -2px 8px rgba(0,0,0,.25);
+        z-index: 200;
+        transition: opacity .2s, transform .2s;
+    }
+    .fc-bar-fixed.hidden {
+        opacity: 0; transform: translateY(100%); pointer-events: none;
+    }
+    .fc-pill {
+        font-weight: 700; padding: 2px 10px; border-radius: 20px; font-size: .85rem;
+    }
+    .fc-pill.ok      { background: #d1fae5; color: #065f46; }
+    .fc-pill.warning { background: #ffedd5; color: #9a3412; }
+    .fc-pill.danger  { background: #fee2e2; color: #991b1b; }
+    .fc-pill.unknown { background: #e5e7eb; color: #374151; }
+    @media (max-width: 991px) {
+        .fc-bar-fixed-spacer { height: 52px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-block mb-3">
+    <h4>{% if recipe %}<i class="bi bi-pencil"></i> Edytuj: {{ recipe.name }}{% else %}<i class="bi bi-plus-circle"></i> Nowy przepis{% endif %}</h4>
+</div>
+
+<form id="recipeForm" method="post">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- Lewa kolumna: dane przepisu + składniki -->
+        <div class="col-lg-8">
+
+            <!-- Dane podstawowe -->
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Dane dania</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Nazwa dania *</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ recipe.name|default:'' }}" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium">Rodzaj posiłku</label>
+                            <select name="meal_type" class="form-select">
+                                {% for value, label in meal_types %}
+                                <option value="{{ value }}"
+                                    {% if recipe and recipe.meal_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium">Liczba porcji</label>
+                            <input type="number" name="yield_portions" class="form-control"
+                                   value="{{ recipe.yield_portions|unlocalize|default:'1' }}"
+                                   min="0.5" step="0.5" id="yieldPortions">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-medium">Kontekst serwowania</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            {% for ctx in contexts_all %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="contexts" value="{{ ctx.context }}"
+                                       id="ctx_{{ ctx.context }}"
+                                       {% if recipe and ctx in recipe.contexts.all %}checked{% endif %}>
+                                <label class="form-check-label" for="ctx_{{ ctx.context }}">
+                                    {{ ctx.get_context_display }}
+                                    <small class="text-muted">(cel FC: {{ ctx.target_fc_percentage }}%)</small>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ceny sprzedaży -->
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Ceny sprzedaży</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label">Cena à la carte (PLN/porcja)</label>
+                            <div class="input-group">
+                                <input type="text" name="selling_price" class="form-control"
+                                       id="sellingPrice"
+                                       value="{{ recipe.selling_price|unlocalize|default:'' }}"
+                                       placeholder="np. 45.00">
+                                <span class="input-group-text">PLN</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Cena pakietu bufet/grupy (PLN/os)</label>
+                            <div class="input-group">
+                                <input type="text" name="package_price_per_person" class="form-control"
+                                       id="packagePrice"
+                                       value="{{ recipe.package_price_per_person|unlocalize|default:'' }}"
+                                       placeholder="np. 85.00">
+                                <span class="input-group-text">PLN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Składniki -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                    <span>Składniki przepisu</span>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addIngredientRow()">
+                        <i class="bi bi-plus-lg"></i> Dodaj składnik
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="ingredientRows">
+                        {% if recipe %}
+                            {% for ri in recipe.ingredients.all %}
+                            <div class="ingredient-row p-3 mb-2" data-row-index="{{ forloop.counter0 }}">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-12 col-md-4">
+                                        <select name="ingredient_id[]" class="form-select ingredient-select" required>
+                                            <option value="">— wybierz składnik —</option>
+                                            {% for ing in ingredients_all %}
+                                            <option value="{{ ing.pk }}"
+                                                {% if ri.ingredient_id == ing.pk %}selected{% endif %}>
+                                                {{ ing.name }} ({{ ing.base_unit }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="hidden" name="supplier_id[]"
+                                               class="supplier-id-input"
+                                               value="{{ ri.preferred_supplier_id|default:'' }}">
+                                        <div class="supplier-prices-panel mt-1" style="display:none"></div>
+                                    </div>
+                                    <div class="col-5 col-md-2">
+                                        <input type="text" name="quantity[]"
+                                               class="form-control quantity-input"
+                                               value="{{ ri.quantity|unlocalize }}" placeholder="Ilość">
+                                    </div>
+                                    <div class="col-4 col-md-2">
+                                        <select name="unit[]" class="form-select unit-select">
+                                            {% for u in units %}
+                                            <option value="{{ u }}" {% if ri.unit == u %}selected{% endif %}>{{ u }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-3 col-md-2">
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" name="yield_factor[]"
+                                                   class="form-control yield-input"
+                                                   value="{{ ri.yield_factor|unlocalize }}" placeholder="Wydajność">
+                                            <span class="input-group-text" title="Wydajność: 1.00 = brak odpadu, 0.85 = 15% odpadu">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-9 col-md-1">
+                                        <span class="cost-badge" data-ing-id="{{ ri.ingredient_id }}">...</span>
+                                    </div>
+                                    <div class="col-3 col-md-1 text-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="removeRow(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="text" name="ing_notes[]"
+                                               class="form-control form-control-sm"
+                                               value="{{ ri.notes }}" placeholder="Uwagi (opcjonalnie)">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary w-100 mt-2" onclick="addIngredientRow()">
+                        <i class="bi bi-plus-lg"></i> Dodaj kolejny składnik
+                    </button>
+                </div>
+            </div>
+
+            <!-- Uwagi -->
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">Uwagi kuchenne</div>
+                <div class="card-body">
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Techniki, czas przygotowania, warianty...">{{ recipe.notes|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mb-3">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg"></i> Zapisz przepis
+                </button>
+                <a href="{% if recipe %}{% url 'recipe_detail' recipe.pk %}{% else %}{% url 'recipe_list' %}{% endif %}"
+                   class="btn btn-outline-secondary">Anuluj</a>
+            </div>
+
+            <!-- FC podsumowanie — mobile only, naturalny blok na końcu -->
+            <div class="fc-bar-base d-lg-none mb-4" id="fcBarBase">
+                <div>
+                    <div class="text-muted" style="font-size:.72rem">Koszt/porcja</div>
+                    <div class="fw-bold" id="stickyPortionCost">—</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-muted" style="font-size:.72rem">FC% (à la carte)</div>
+                    <span class="fc-pill unknown" id="stickyFcPill">—</span>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted" style="font-size:.72rem">Łączny koszt</div>
+                    <div class="fw-bold" id="stickyTotalCost">—</div>
+                </div>
+            </div>
+            <div class="fc-bar-fixed-spacer d-lg-none"></div>
+        </div>
+
+        <!-- Prawa kolumna: live FC preview -->
+        <div class="col-lg-4">
+            <div class="fc-live-box p-3" id="fcLiveBox">
+                <h6 class="fw-bold mb-3"><i class="bi bi-calculator"></i> Podgląd Food Cost</h6>
+
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Łączny koszt:</span>
+                    <span class="fw-bold" id="totalCost">—</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Porcji:</span>
+                    <span id="portionsDisplay">—</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Koszt/porcja:</span>
+                    <span class="fw-bold fs-5" id="costPerPortion">—</span>
+                </div>
+
+                <hr>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-muted">FC% (à la carte)</span>
+                        <span class="fw-bold" id="fcCarte">—</span>
+                    </div>
+                    <div class="progress mt-1" style="height:6px">
+                        <div class="progress-bar" id="fcCarteBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="small text-muted">FC% (bufet/grupy)</span>
+                        <span class="fw-bold" id="fcPackage">—</span>
+                    </div>
+                    <div class="progress mt-1" style="height:6px">
+                        <div class="progress-bar" id="fcPackageBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div id="fcAlert" class="alert py-2 small d-none"></div>
+
+                <div class="mt-3">
+                    <div class="small text-muted fw-semibold mb-2">Składniki bez ceny:</div>
+                    <div id="missingPrices" class="small text-warning">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- FC fixed bar — mobile, chowany gdy naturalny blok wchodzi do widoku -->
+<div class="fc-bar-fixed d-lg-none hidden" id="fcBarFixed">
+    <div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.6)">Koszt/porcja</div>
+        <div class="fw-bold" id="fixedPortionCost">—</div>
+    </div>
+    <div class="text-center">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.6)">FC%</div>
+        <span class="fc-pill unknown" id="fixedFcPill">—</span>
+    </div>
+    <div class="text-end">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.6)">Łączny koszt</div>
+        <div class="fw-bold" id="fixedTotalCost">—</div>
+    </div>
+</div>
+
+<!-- Template dla nowego wiersza składnika (hidden) -->
+<template id="ingredientRowTemplate">
+    <div class="ingredient-row p-3 mb-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+                <select name="ingredient_id[]" class="form-select ingredient-select" required>
+                    <option value="">— wybierz składnik —</option>
+                    {% for ing in ingredients_all %}
+                    <option value="{{ ing.pk }}">{{ ing.name }} ({{ ing.base_unit }})</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="supplier_id[]" class="supplier-id-input" value="">
+                <div class="supplier-prices-panel mt-1" style="display:none"></div>
+            </div>
+            <div class="col-5 col-md-2">
+                <input type="text" name="quantity[]" class="form-control quantity-input" placeholder="Ilość">
+            </div>
+            <div class="col-4 col-md-2">
+                <select name="unit[]" class="form-select unit-select">
+                    {% for u in units %}
+                    <option value="{{ u }}">{{ u }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-3 col-md-2">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="yield_factor[]" class="form-control yield-input"
+                           value="1.00" placeholder="Wydajność">
+                    <span class="input-group-text" title="1.00 = brak odpadu">%</span>
+                </div>
+            </div>
+            <div class="col-9 col-md-1">
+                <span class="cost-badge no-price">brak ceny</span>
+            </div>
+            <div class="col-3 col-md-1 text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="col-12">
+                <input type="text" name="ing_notes[]" class="form-control form-control-sm"
+                       placeholder="Uwagi (opcjonalnie)">
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cache cen składników
+const priceCache = {};
+
+function addIngredientRow() {
+    const template = document.getElementById('ingredientRowTemplate');
+    const clone = template.content.cloneNode(true);
+    const container = document.getElementById('ingredientRows');
+    container.appendChild(clone);
+    const rows = container.querySelectorAll('.ingredient-row');
+    const lastRow = rows[rows.length - 1];
+    lastRow.querySelector('.ingredient-select').focus();
+    bindRowEvents(lastRow);
+}
+
+function removeRow(btn) {
+    btn.closest('.ingredient-row').remove();
+    recalculateFC();
+}
+
+function bindRowEvents(row) {
+    row.querySelector('.ingredient-select').addEventListener('change', function() {
+        const ingId = this.value;
+        const col = this.closest('.col-12');
+        const panel = col.querySelector('.supplier-prices-panel');
+        const hiddenInput = col.querySelector('.supplier-id-input');
+        if (!ingId) {
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+            if (hiddenInput) hiddenInput.value = '';
+            return;
+        }
+        // Reset dostawcy przy zmianie składnika
+        if (hiddenInput) hiddenInput.value = '';
+        fetchIngredientData(ingId).then(data => {
+            renderSupplierPanel(panel, data, null);
+            recalculateFC();
+        });
+    });
+    ['quantity-input', 'unit-select', 'yield-input'].forEach(cls => {
+        const el = row.querySelector('.' + cls);
+        if (el) el.addEventListener('input', () => recalculateFC());
+    });
+}
+
+function renderSupplierPanel(panel, data, selectedSupplierId) {
+    if (!data || !data.prices || data.prices.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+    // Jeśli żaden nie wybrany — użyj najtańszego
+    const activeId = selectedSupplierId || (data.prices.find(p => p.is_best)?.supplier_id) || null;
+
+    const rows = data.prices.map(p => {
+        const isSelected = String(p.supplier_id) === String(activeId);
+        return `
+        <tr class="supplier-row ${isSelected ? 'table-primary' : ''}"
+            style="cursor:pointer"
+            onclick="selectSupplier(this, ${p.supplier_id}, '${p.supplier}')"
+            data-supplier-id="${p.supplier_id}">
+            <td class="py-1 px-2 small">
+                ${isSelected ? '<i class="bi bi-check2 text-primary fw-bold"></i> ' : ''}${p.supplier}
+            </td>
+            <td class="py-1 px-2 small text-end fw-semibold">${p.price.toFixed(2)} PLN/${p.unit}</td>
+            <td class="py-1 px-2 small text-end">
+                <span class="badge ${p.is_netto ? 'bg-success' : 'bg-warning text-dark'}" style="font-size:0.65rem">
+                    ${p.is_netto ? 'NETTO' : 'BRUTTO'}
+                </span>
+            </td>
+        </tr>`;
+    }).join('');
+
+    panel.innerHTML = `
+        <div class="small text-muted mb-1">Wybierz dostawcę (kliknij):</div>
+        <table class="table table-sm mb-0" style="font-size:0.8rem;border:1px solid #dee2e6;border-radius:4px">
+            <tbody>${rows}</tbody>
+        </table>`;
+    panel.style.display = 'block';
+}
+
+function selectSupplier(rowEl, supplierId, supplierName) {
+    const panel = rowEl.closest('.supplier-prices-panel');
+    // Odznacz wszystkie
+    panel.querySelectorAll('.supplier-row').forEach(r => {
+        r.classList.remove('table-primary');
+        r.querySelector('td:first-child').innerHTML =
+            r.querySelector('td:first-child').innerHTML.replace(/<i[^>]+><\/i> /, '');
+    });
+    // Zaznacz wybrany
+    rowEl.classList.add('table-primary');
+    rowEl.querySelector('td:first-child').innerHTML =
+        '<i class="bi bi-check2 text-primary fw-bold"></i> ' +
+        rowEl.querySelector('td:first-child').textContent.trim();
+    // Zapisz do hidden input
+    const col = panel.closest('.col-12');
+    const hiddenInput = col.querySelector('.supplier-id-input');
+    if (hiddenInput) hiddenInput.value = supplierId;
+    // Przelicz FC z nową ceną
+    recalculateFCWithSupplierOverride(panel, supplierId);
+}
+
+// Pobierz dane składnika przez AJAX (ceny wszystkich dostawców)
+async function fetchIngredientData(ingId) {
+    if (priceCache[ingId] !== undefined) return priceCache[ingId];
+    try {
+        const resp = await fetch(`/recipes/api/cena/${ingId}/`);
+        const data = await resp.json();
+        priceCache[ingId] = data;
+        return data;
+    } catch {
+        priceCache[ingId] = null;
+        return null;
+    }
+}
+
+async function fetchIngredientPrice(ingId) {
+    const data = await fetchIngredientData(ingId);
+    return data ? data.price_per_base_unit : null;
+}
+
+// Przeliczniki jednostek do jednostki bazowej
+const unitConversions = {
+    'kg': { 'g': 1000, 'kg': 1 },
+    'g':  { 'g': 1, 'kg': 0.001 },
+    'l':  { 'ml': 1000, 'l': 1 },
+    'ml': { 'ml': 1, 'l': 0.001 },
+    'szt': { 'szt': 1 },
+    'opak': { 'opak': 1 },
+};
+const baseUnits = { 'kg': 'g', 'g': 'g', 'l': 'ml', 'ml': 'ml', 'szt': 'szt', 'opak': 'opak' };
+
+async function recalculateFC() {
+    const rows = document.querySelectorAll('#ingredientRows .ingredient-row');
+    let totalCost = 0;
+    let hasAllPrices = true;
+    const missingIngredients = [];
+
+    for (const row of rows) {
+        const ingId = row.querySelector('.ingredient-select').value;
+        const qty = parseFloat(row.querySelector('.quantity-input').value?.replace(',', '.')) || 0;
+        const unit = row.querySelector('.unit-select').value;
+        const yieldFactor = parseFloat(row.querySelector('.yield-input').value?.replace(',', '.')) || 1;
+        const badge = row.querySelector('.cost-badge');
+        const supplierIdInput = row.querySelector('.supplier-id-input');
+        const selectedSupplierId = supplierIdInput?.value || null;
+
+        if (!ingId || qty <= 0) {
+            badge && (badge.textContent = '—');
+            continue;
+        }
+
+        const data = await fetchIngredientData(ingId);
+        if (!data || data.price_per_base_unit === null) {
+            hasAllPrices = false;
+            const ingName = row.querySelector('.ingredient-select option:checked').text.split(' (')[0];
+            missingIngredients.push(ingName);
+            badge.textContent = 'brak ceny';
+            badge.className = 'cost-badge no-price';
+            continue;
+        }
+
+        // Użyj ceny wybranego dostawcy lub najtańszego
+        let pricePerBase = data.price_per_base_unit;
+        if (selectedSupplierId && data.prices) {
+            const preferred = data.prices.find(p => String(p.supplier_id) === String(selectedSupplierId));
+            if (preferred) pricePerBase = preferred.price_per_base_unit;
+        }
+
+        const convMap = unitConversions[unit] || {};
+        const baseUnit = baseUnits[unit];
+        const factor = convMap[baseUnit] || 1;
+        const qtyInBase = qty * factor;
+        const effectiveQty = qtyInBase / yieldFactor;
+        const cost = effectiveQty * pricePerBase;
+
+        totalCost += cost;
+        badge.textContent = cost.toFixed(2) + ' PLN';
+        badge.className = 'cost-badge';
+    }
+
+    updateFCPanel(totalCost, missingIngredients, hasAllPrices);
+}
+
+function recalculateFCWithSupplierOverride(panel, supplierId) {
+    // Szybkie przeliczenie po zmianie dostawcy — wywołaj pełne recalculate
+    recalculateFC();
+}
+
+function updateFCPanel(totalCost, missingIngredients, hasAllPrices) {
+    const portions = parseFloat(document.getElementById('yieldPortions').value) || 1;
+    const sellingPrice = parseFloat(document.getElementById('sellingPrice').value?.replace(',', '.')) || 0;
+    const packagePrice = parseFloat(document.getElementById('packagePrice').value?.replace(',', '.')) || 0;
+    const costPerPortion = totalCost / portions;
+
+    document.getElementById('totalCost').textContent = totalCost.toFixed(2) + ' PLN';
+    document.getElementById('portionsDisplay').textContent = portions;
+    document.getElementById('costPerPortion').textContent = costPerPortion.toFixed(2) + ' PLN';
+
+    const fcBox = document.getElementById('fcLiveBox');
+    if (sellingPrice > 0) {
+        const fc = (costPerPortion / sellingPrice * 100);
+        document.getElementById('fcCarte').textContent = fc.toFixed(1) + '%';
+        updateFCBar('fcCarteBar', fc);
+        updateFCBoxStatus(fcBox, fc);
+    } else {
+        document.getElementById('fcCarte').textContent = '—';
+        document.getElementById('fcCarteBar').style.width = '0%';
+    }
+
+    if (packagePrice > 0) {
+        const fcp = (costPerPortion / packagePrice * 100);
+        document.getElementById('fcPackage').textContent = fcp.toFixed(1) + '%';
+        updateFCBar('fcPackageBar', fcp);
+    } else {
+        document.getElementById('fcPackage').textContent = '—';
+        document.getElementById('fcPackageBar').style.width = '0%';
+    }
+
+    const missingEl = document.getElementById('missingPrices');
+    if (missingIngredients.length) {
+        missingEl.textContent = missingIngredients.join(', ');
+    } else {
+        missingEl.textContent = hasAllPrices ? 'Brak — wszystkie ceny uzupełnione ✓' : '—';
+    }
+
+    // FC bar — aktualizuj oba (base + fixed)
+    const sellingPrice2 = parseFloat(document.getElementById('sellingPrice').value?.replace(',', '.')) || 0;
+    let pillClass = 'fc-pill unknown', pillText = '—';
+    if (sellingPrice2 > 0) {
+        const fc = costPerPortion / sellingPrice2 * 100;
+        pillText = fc.toFixed(1) + '%';
+        pillClass = 'fc-pill ' + (fc <= 30 ? 'ok' : fc <= 38 ? 'warning' : 'danger');
+    }
+    ['stickyPortionCost','fixedPortionCost'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = costPerPortion.toFixed(2) + ' PLN';
+    });
+    ['stickyTotalCost','fixedTotalCost'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = totalCost.toFixed(2) + ' PLN';
+    });
+    ['stickyFcPill','fixedFcPill'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = pillText; el.className = pillClass; }
+    });
+}
+
+function updateFCBar(barId, fc) {
+    const bar = document.getElementById(barId);
+    const pct = Math.min(fc, 100);
+    bar.style.width = pct + '%';
+    bar.className = 'progress-bar ' + (fc <= 30 ? 'bg-success' : fc <= 38 ? 'bg-warning' : 'bg-danger');
+}
+
+function updateFCBoxStatus(box, fc) {
+    box.className = 'fc-live-box p-3 ' + (fc <= 30 ? 'status-ok' : fc <= 38 ? 'status-warning' : 'status-danger');
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#ingredientRows .ingredient-row').forEach(row => {
+        bindRowEvents(row);
+    });
+
+    // Prefetch cen i renderuj panele dostawców dla istniejących składników
+    const existingSelects = Array.from(document.querySelectorAll('#ingredientRows .ingredient-select'))
+        .filter(s => s.value);
+
+    Promise.all(existingSelects.map(s => {
+        const col = s.closest('.col-12');
+        const panel = col.querySelector('.supplier-prices-panel');
+        const hiddenInput = col.querySelector('.supplier-id-input');
+        const selectedSupplierId = hiddenInput?.value || null;
+        return fetchIngredientData(s.value).then(data => {
+            if (panel) renderSupplierPanel(panel, data, selectedSupplierId);
+        });
+    })).then(() => recalculateFC());
+
+    ['sellingPrice', 'packagePrice', 'yieldPortions'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', recalculateFC);
+    });
+
+    // Fixed bar: pokaż gdy naturalny blok poza widokiem, ukryj gdy wchodzi
+    const fcBarBase = document.getElementById('fcBarBase');
+    const fcBarFixed = document.getElementById('fcBarFixed');
+    if (fcBarBase && fcBarFixed && window.innerWidth < 992) {
+        const observer = new IntersectionObserver(entries => {
+            fcBarFixed.classList.toggle('hidden', entries[0].isIntersecting);
+        }, { threshold: 0.1 });
+        observer.observe(fcBarBase);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}Potwierdź ceny z cennika{% endblock %}
+{% block page_title_mobile %}Potwierdź ceny{% endblock %}
+
+{% block extra_css %}
+<style>
+    .item-row.skipped { opacity: 0.4; }
+    .match-high { color: #198754; }
+    .match-low { color: #fd7e14; }
+    .match-none { color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-check2-square"></i> Potwierdź ceny z cennika</h4>
+        <div class="text-muted small">
+            Dostawca: <strong>{{ supplier.name }}</strong> · Plik: <strong>{{ filename }}</strong>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'spreadsheet_upload' %}" class="btn btn-outline-secondary">← Wgraj ponownie</a>
+        <button form="confirmForm" type="submit" class="btn btn-success">
+            <i class="bi bi-check-lg"></i> Zapisz zaznaczone ceny
+        </button>
+    </div>
+</div>
+
+<div class="alert alert-info py-2 small mb-3">
+    <i class="bi bi-info-circle"></i>
+    Zaznacz pozycje do zapisania.
+    <span class="match-low">Pomarańczowe</span> i <span class="match-none">czerwone</span> dopasowania wymagają ręcznej korekty.
+</div>
+
+<form id="confirmForm" method="post">
+    {% csrf_token %}
+
+    <div class="card d-none d-lg-block mb-3">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:40px">
+                            <input type="checkbox" id="selectAll" checked class="form-check-input">
+                        </th>
+                        <th>Nazwa z cennika</th>
+                        <th>Cena</th>
+                        <th>Jedn.</th>
+                        <th>Opak.</th>
+                        <th>N/B</th>
+                        <th>Dopasowany składnik</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr class="item-row" id="row-{{ forloop.counter0 }}">
+                        <td>
+                            <input type="checkbox" name="save_{{ forloop.counter0 }}"
+                                   class="form-check-input row-check"
+                                   data-row="{{ forloop.counter0 }}"
+                                   {% if item.matched_ingredient_id %}checked{% endif %}>
+                        </td>
+                        <td class="small fw-medium">{{ item.name }}</td>
+                        <td>
+                            <input type="text" name="price_{{ forloop.counter0 }}"
+                                   class="form-control form-control-sm"
+                                   style="width:90px"
+                                   value="{{ item.price }}">
+                        </td>
+                        <td>
+                            <select name="unit_{{ forloop.counter0 }}" class="form-select form-select-sm" style="width:70px">
+                                {% for u in units %}
+                                <option value="{{ u }}" {% if item.unit == u %}selected{% endif %}>{{ u }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="package_size_{{ forloop.counter0 }}"
+                                   class="form-control form-control-sm"
+                                   style="width:70px"
+                                   value="{{ item.package_size|default:'' }}"
+                                   placeholder="—">
+                        </td>
+                        <td>
+                            <select name="is_netto_{{ forloop.counter0 }}" class="form-select form-select-sm" style="width:80px">
+                                <option value="1" {% if item.is_netto %}selected{% endif %}>NETTO</option>
+                                <option value="0" {% if not item.is_netto %}selected{% endif %}>BRUTTO</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select name="ingredient_id_{{ forloop.counter0 }}" class="form-select form-select-sm">
+                                <option value="">— nie dopasowano —</option>
+                                {% for ing in ingredients_all %}
+                                <option value="{{ ing.pk }}"
+                                    {% if item.matched_ingredient_id == ing.pk %}selected{% endif %}>
+                                    {{ ing.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if item.matched_ingredient_id %}
+                                {% if item.match_score >= 0.8 %}
+                                    <small class="match-high"><i class="bi bi-check-circle"></i> pewne</small>
+                                {% else %}
+                                    <small class="match-low"><i class="bi bi-exclamation-circle"></i> sprawdź</small>
+                                {% endif %}
+                            {% else %}
+                                <small class="match-none"><i class="bi bi-x-circle"></i> wybierz ręcznie</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">Brak pozycji</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile -->
+    <div class="d-lg-none">
+        {% for item in items %}
+        <div class="card mb-2 item-row" id="row-mob-{{ forloop.counter0 }}">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-start gap-2 mb-2">
+                    <input type="checkbox" name="save_{{ forloop.counter0 }}"
+                           class="form-check-input row-check mt-1"
+                           data-row="{{ forloop.counter0 }}"
+                           {% if item.matched_ingredient_id %}checked{% endif %}>
+                    <div class="fw-medium small flex-grow-1">{{ item.name }}</div>
+                    <span class="fw-bold text-nowrap">{{ item.price }} PLN/{{ item.unit }}</span>
+                </div>
+                <select name="ingredient_id_{{ forloop.counter0 }}" class="form-select form-select-sm mb-2">
+                    <option value="">— nie dopasowano —</option>
+                    {% for ing in ingredients_all %}
+                    <option value="{{ ing.pk }}"
+                        {% if item.matched_ingredient_id == ing.pk %}selected{% endif %}>
+                        {{ ing.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <input type="text" name="price_{{ forloop.counter0 }}"
+                               class="form-control form-control-sm"
+                               value="{{ item.price }}">
+                    </div>
+                    <div class="col-3">
+                        <select name="unit_{{ forloop.counter0 }}" class="form-select form-select-sm">
+                            {% for u in units %}
+                            <option value="{{ u }}" {% if item.unit == u %}selected{% endif %}>{{ u }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <select name="is_netto_{{ forloop.counter0 }}" class="form-select form-select-sm">
+                            <option value="1" {% if item.is_netto %}selected{% endif %}>NETTO</option>
+                            <option value="0" {% if not item.is_netto %}selected{% endif %}>BRUTTO</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="d-lg-none" style="height:80px"></div>
+    <div class="d-lg-none position-fixed bottom-0 start-0 end-0 p-3 bg-white border-top shadow-sm">
+        <button type="submit" class="btn btn-success w-100">
+            <i class="bi bi-check-lg"></i> Zapisz zaznaczone ceny
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    document.querySelectorAll('.row-check').forEach(cb => {
+        cb.checked = this.checked;
+        updateRowOpacity(cb);
+    });
+});
+
+document.querySelectorAll('.row-check').forEach(cb => {
+    cb.addEventListener('change', () => updateRowOpacity(cb));
+    updateRowOpacity(cb);
+});
+
+function updateRowOpacity(cb) {
+    const idx = cb.dataset.row;
+    const row = document.getElementById('row-' + idx) ||
+                document.getElementById('row-mob-' + idx);
+    if (row) row.classList.toggle('skipped', !cb.checked);
+}
+</script>
+{% endblock %}

@@ -2,6 +2,47 @@
 
 ---
 
+## Sesja 2026-09-08 — Konsolidacja z foodcost.sudomie.pl (archiwizacja)
+
+User: „robiliśmy wczoraj fc.sudomie.pl a oprócz tego jest foodcost.sudomie.pl
+więc trzeba by przenieść wszystko do jednego foldera. Połączyć oba projekty
+do jednego darmowego narzędzia". Przed ruszeniem czegokolwiek —
+`foodcost.sudomie.pl` to produkcyjna apka realnego klienta (Hotel Niedźwiadek,
+szef kuchni Michał, GoDaddy/MySQL), nie demo do połączenia bez ryzyka.
+Doprecyzowane z userem: produkcja Michała zostaje bez zmian na GoDaddy,
+kod przenosimy do fc.sudomie.pl tylko jako archiwum.
+
+### Zrobiono
+- `mv /home/konrad/Claude/foodcost.sudomie.pl` →
+  `/home/konrad/Claude/fc.sudomie.pl/legacy-foodcost/` (56 plików, bez
+  czyszczenia zagnieżdżonych duplikatów `foodcost/foodcost/foodcost/...` ani
+  starych zipów — to ma być wierne archiwum, nie porządkowanie).
+- Zweryfikowano brak sekretów w przenoszonych plikach (tylko `.env.example`).
+- Zaktualizowano HANDOFF.md — nowy kontekst: Michał widział fc.sudomie.pl i
+  wolałby przejść na tę wersję, ale potrzebuje OCR faktur (funkcja istnieje
+  w legacy-foodcost, nie w fc.sudomie.pl jeszcze).
+
+### Zadziałało
+- Pytanie usera przed ruszeniem produkcji klienta zamiast zgadywania —
+  pierwotna prośba ("połącz oba projekty w jedno") brzmiała jak pełny merge
+  kodu, co oznaczałoby ryzykowną robotę na żywych danych Michała bez potrzeby.
+  Doprecyzowanie pokazało, że wystarczy archiwizacja + osobny plan na
+  properties OCR.
+
+### Nie zadziałało
+- (nic — sesja skupiona na jednym bezpiecznym kroku)
+
+### Następne kroki
+- Port OCR faktur (`legacy-foodcost/.../ocr_service.py` + `invoice_views.py`)
+  do `apps/ingredients/` w fc.sudomie.pl — Faza 3, blokuje przejście Michała.
+- Migracja realnych danych Hotelu Niedźwiadek (ceny/składniki z MySQL
+  produkcji) do organizacji w fc.sudomie.pl — dopiero po jego zgodzie na
+  przejście, seed `niedzwiadek-test` jest przestarzały.
+- Do decyzji później: co z domeną/hostingiem `foodcost.sudomie.pl` (GoDaddy)
+  gdy/jeśli Michał faktycznie przejdzie na fc.sudomie.pl — nie ruszać teraz.
+
+---
+
 ## Sesja 2026-09-07 (5) — Zmiana hasła + zarządzanie zespołem organizacji
 
 Konrad ręcznie utworzył konto `dyrektor@hotelniedzwiadek.pl` (przez

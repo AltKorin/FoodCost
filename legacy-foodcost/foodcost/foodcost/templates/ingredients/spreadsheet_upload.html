@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Import cennika Excel/CSV{% endblock %}
+{% block page_title_mobile %}Import cennika{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-block mb-4">
+    <h4><i class="bi bi-file-earmark-spreadsheet"></i> Import cennika Excel / CSV</h4>
+    <p class="text-muted">Wgraj plik z cennikiem dostawcy — system spróbuje automatycznie wykryć kolumny.</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Dostawca *</label>
+                        <select name="supplier_id" class="form-select" required>
+                            <option value="">— wybierz dostawcę —</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.pk }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">Plik cennika *</label>
+                        <input type="file" name="price_file" class="form-control"
+                               accept=".xlsx,.xls,.csv" required>
+                        <div class="form-text">
+                            Obsługiwane formaty: <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong> — max 10MB.
+                            Plik powinien mieć nagłówki kolumn w pierwszym wierszu.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 small">
+                        <i class="bi bi-info-circle"></i>
+                        System spróbuje automatycznie wykryć kolumny z nazwą, ceną i jednostką.
+                        W następnym kroku możesz poprawić mapowanie jeśli nie wykryje ich prawidłowo.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-upload"></i> Wgraj i wykryj kolumny
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header fw-semibold small">
+                <i class="bi bi-question-circle"></i> Jak przygotować plik?
+            </div>
+            <div class="card-body small text-muted">
+                <p class="mb-1">Plik powinien mieć kolumny z nagłówkami, np.:</p>
+                <table class="table table-sm table-bordered mb-2" style="font-size:0.8rem">
+                    <thead class="table-light">
+                        <tr><th>Nazwa</th><th>Cena netto</th><th>Jednostka</th><th>Opakowanie</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Filet z kurczaka</td><td>12.50</td><td>kg</td><td></td></tr>
+                        <tr><td>Masło 82%</td><td>145.00</td><td>kg</td><td>5</td></tr>
+                    </tbody>
+                </table>
+                <p class="mb-0">Kolumna "Opakowanie" = ile jednostek w kartonie (np. 5 dla kartonu 5kg).</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

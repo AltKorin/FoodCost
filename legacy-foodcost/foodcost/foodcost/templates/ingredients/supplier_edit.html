@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{% if supplier %}Edytuj dostawcę{% else %}Nowy dostawca{% endif %}{% endblock %}
+{% block page_title_mobile %}{% if supplier %}Edytuj{% else %}Nowy dostawca{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+<button form="supplierForm" type="submit" class="btn btn-success btn-sm ms-auto">
+    <i class="bi bi-check-lg"></i> Zapisz
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-block mb-4">
+    <h4>{% if supplier %}<i class="bi bi-pencil"></i> Edytuj: {{ supplier.name }}{% else %}<i class="bi bi-plus-circle"></i> Nowy dostawca{% endif %}</h4>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <form id="supplierForm" method="post">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Nazwa dostawcy *</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ supplier.name|default:'' }}" required autofocus>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium">Osoba kontaktowa</label>
+                            <input type="text" name="contact_name" class="form-control"
+                                   value="{{ supplier.contact_name|default:'' }}"
+                                   placeholder="np. Jan Kowalski">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-medium">Telefon</label>
+                            <input type="text" name="phone" class="form-control"
+                                   value="{{ supplier.phone|default:'' }}"
+                                   placeholder="np. 500 123 456">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Email</label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ supplier.email|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Dni dostaw</label>
+                        <input type="text" name="delivery_days" class="form-control"
+                               value="{{ supplier.delivery_days|default:'' }}"
+                               placeholder="np. poniedziałek, środa, piątek">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Uwagi</label>
+                        <textarea name="notes" class="form-control" rows="2"
+                                  placeholder="np. minimalne zamówienie 500 PLN, dostawa do godz. 8">{{ supplier.notes|default:'' }}</textarea>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Zapisz
+                    </button>
+                    <a href="{% url 'supplier_list' %}" class="btn btn-outline-secondary">Anuluj</a>
+                    {% if supplier %}
+                    <a href="{% url 'supplier_delete' supplier.pk %}"
+                       class="btn btn-outline-danger ms-auto">
+                        <i class="bi bi-trash"></i> Usuń
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load foodcost_tags %}
+{% block title %}Aktualizacja cen — {{ supplier.name }}{% endblock %}
+{% block page_title_mobile %}{{ supplier.name }}{% endblock %}
+
+{% block topbar_actions %}
+<button form="priceForm" type="submit" class="btn btn-success btn-sm ms-auto">
+    <i class="bi bi-check-lg"></i> Zapisz
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 d-none d-lg-flex">
+    <div>
+        <h4 class="mb-0"><i class="bi bi-tags"></i> {{ supplier.name }}</h4>
+        <small class="text-muted">Aktualizacja cennika — {{ supplier.delivery_days|default:"" }}</small>
+    </div>
+    <button form="priceForm" type="submit" class="btn btn-success">
+        <i class="bi bi-check-lg"></i> Zapisz wszystkie zmiany
+    </button>
+</div>
+
+<div class="alert alert-info py-2 small">
+    <i class="bi bi-info-circle"></i>
+    Wpisz tylko te ceny, które się zmieniły lub chcesz dodać. Puste pola są pomijane.
+    Pola z żółtym tłem mają nową wartość.
+</div>
+
+<form id="priceForm" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="source_note" value="Cennik {{ supplier.name }}">
+
+    <!-- Desktop: tabela -->
+    <div class="card d-none d-md-block">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:35%">Składnik</th>
+                        <th style="width:12%">Kategoria</th>
+                        <th style="width:12%">Ostatnia cena</th>
+                        <th style="width:10%">Jedn.</th>
+                        <th style="width:14%">Nowa cena (PLN)</th>
+                        <th style="width:10%">Jedn.</th>
+                        <th style="width:7%">Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% regroup rows by ingredient.category as category_list %}
+                    {% for category in category_list %}
+                        {% if category.grouper %}
+                        <tr class="table-secondary">
+                            <td colspan="7" class="fw-semibold small text-uppercase ps-3">
+                                {{ category.grouper }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% for row in category.list %}
+                        <tr>
+                            <td class="ps-3">
+                                <span class="fw-medium">{{ row.ingredient.name }}</span>
+                            </td>
+                            <td class="text-muted small">{{ row.ingredient.category|default:"—" }}</td>
+                            <td>
+                                {% if row.current_price %}
+                                    <span class="fw-semibold">{{ row.current_price.price }} PLN</span>
+                                {% else %}
+                                    <span class="text-muted">brak</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">
+                                {% if row.current_price %}{{ row.current_price.unit }}{% endif %}
+                            </td>
+                            <td>
+                                <input
+                                    type="text"
+                                    name="price_{{ row.ingredient.pk }}"
+                                    class="form-control form-control-sm price-input price-field"
+                                    inputmode="decimal"
+                                    placeholder="{{ row.current_price.price|default:'—' }}"
+                                    autocomplete="off"
+                                >
+                            </td>
+                            <td>
+                                <select name="unit_{{ row.ingredient.pk }}" class="form-select form-select-sm">
+                                    {% for u in 'kg,g,l,ml,szt,opak'|split:',' %}
+                                    <option value="{{ u }}"
+                                        {% if row.current_price and row.current_price.unit == u %}selected{% endif %}
+                                        {% if not row.current_price and row.ingredient.base_unit == u %}selected{% endif %}
+                                    >{{ u }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="text-muted small">
+                                {% if row.current_price %}{{ row.current_price.valid_from|date:"d.m" }}{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile: karty -->
+    <div class="d-md-none">
+        {% regroup rows by ingredient.category as category_list %}
+        {% for category in category_list %}
+            {% if category.grouper %}
+            <div class="text-uppercase text-muted small fw-semibold mt-3 mb-1 px-1">
+                {{ category.grouper }}
+            </div>
+            {% endif %}
+            {% for row in category.list %}
+            <div class="card mb-2">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="fw-semibold">{{ row.ingredient.name }}</span>
+                        <span class="text-muted small">
+                            {% if row.current_price %}
+                                {{ row.current_price.price }} PLN/{{ row.current_price.unit }}
+                            {% else %}
+                                brak ceny
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <input
+                            type="text"
+                            name="price_{{ row.ingredient.pk }}"
+                            class="form-control form-control-sm price-field"
+                            inputmode="decimal"
+                            placeholder="Nowa cena PLN"
+                            autocomplete="off"
+                        >
+                        <select name="unit_{{ row.ingredient.pk }}" class="form-select form-select-sm" style="width:80px">
+                            {% for u in 'kg,g,l,ml,szt,opak'|split:',' %}
+                            <option value="{{ u }}"
+                                {% if row.current_price and row.current_price.unit == u %}selected{% endif %}
+                                {% if not row.current_price and row.ingredient.base_unit == u %}selected{% endif %}
+                            >{{ u }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <!-- Floating save button mobile -->
+    <div class="d-md-none" style="height:80px"></div>
+    <div class="d-md-none position-fixed bottom-0 start-0 end-0 p-3 bg-white border-top shadow-sm">
+        <button type="submit" class="btn btn-success w-100">
+            <i class="bi bi-check-lg"></i> Zapisz wszystkie zmiany
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Podświetl zmienione pola
+document.querySelectorAll('.price-field').forEach(input => {
+    input.addEventListener('input', function() {
+        const row = this.closest('tr') || this.closest('.card');
+        if (this.value.trim()) {
+            row && row.classList.add('price-changed');
+            this.classList.add('border-warning');
+        } else {
+            row && row.classList.remove('price-changed');
+            this.classList.remove('border-warning');
+        }
+    });
+
+    // Tab nawigacja między polami ceny (desktop)
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === 'Tab' && !e.shiftKey) {
+            const inputs = Array.from(document.querySelectorAll('.price-field'));
+            const idx = inputs.indexOf(this);
+            if (idx < inputs.length - 1) {
+                e.preventDefault();
+                inputs[idx + 1].focus();
+            }
+        }
+    });
+});
+
+// Podgląd liczby zmienionych cen
+let changedCount = 0;
+document.querySelectorAll('.price-field').forEach(input => {
+    input.addEventListener('input', () => {
+        changedCount = document.querySelectorAll('.price-field').filter ?
+            Array.from(document.querySelectorAll('.price-field')).filter(i => i.value.trim()).length : 0;
+    });
+});
+</script>
+{% endblock %}

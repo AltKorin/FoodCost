@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Mapowanie kolumn{% endblock %}
+{% block page_title_mobile %}Kolumny cennika{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-block mb-3">
+    <h4><i class="bi bi-layout-three-columns"></i> Mapowanie kolumn — {{ supplier.name }}</h4>
+    <p class="text-muted small">Plik: <strong>{{ filename }}</strong></p>
+</div>
+
+<!-- Podgląd pliku -->
+<div class="card mb-3">
+    <div class="card-header fw-semibold small">Podgląd pierwszych wierszy pliku</div>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0" style="font-size:0.8rem">
+            <thead class="table-dark">
+                <tr>
+                    {% for h in headers %}
+                    <th>{{ h|default:"(pusta)" }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview_rows %}
+                <tr>
+                    {% for cell in row %}
+                    <td>{{ cell|truncatechars:30 }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Mapowanie -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header fw-semibold">Przypisz kolumny do pól</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field_key, field_label in fields %}
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">{{ field_label }}</label>
+                        <select name="col_{{ field_key }}" class="form-select"
+                                {% if 'name' in field_label or 'Cena' in field_label %}required{% endif %}>
+                            <option value="-1">— nie używaj —</option>
+                            {% for i, header in headers|enumerate %}
+                            <option value="{{ i }}"
+                                {% if mapping|get_item:field_key == i %}selected{% endif %}>
+                                Kolumna {{ i|add:1 }}: {{ header|default:"(bez nazwy)" }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-arrow-right"></i> Dalej — podgląd danych
+                        </button>
+                        <a href="{% url 'spreadsheet_upload' %}" class="btn btn-outline-secondary">
+                            ← Wgraj ponownie
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

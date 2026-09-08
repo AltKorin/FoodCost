@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title_mobile %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'recipe_create' %}" class="btn btn-primary btn-sm ms-auto">
+    <i class="bi bi-plus"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-speedometer2"></i> Dashboard Food Cost</h4>
+    <a href="{% url 'recipe_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nowy przepis
+    </a>
+</div>
+
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="fs-2 fw-bold text-primary">{{ stats.recipes_total }}</div>
+                <div class="text-muted small">Przepisów</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="fs-2 fw-bold {% if stats.recipes_over_fc > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ stats.recipes_over_fc }}
+                </div>
+                <div class="text-muted small">FC przekroczony</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="fs-2 fw-bold {% if stats.recipes_no_price > 0 %}text-warning{% else %}text-success{% endif %}">
+                    {{ stats.recipes_no_price }}
+                </div>
+                <div class="text-muted small">Bez ceny</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="fs-2 fw-bold {% if stats.ingredients_no_price > 0 %}text-warning{% else %}text-success{% endif %}">
+                    {{ stats.ingredients_no_price }}
+                </div>
+                <div class="text-muted small">Składniki bez ceny</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Szybka aktualizacja cen -->
+{% if suppliers %}
+<div class="card mb-4">
+    <div class="card-header fw-semibold">
+        <i class="bi bi-tags"></i> Szybka aktualizacja cennika
+    </div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+            {% for s in suppliers %}
+            <a href="{% url 'price_update' s.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil"></i> {{ s.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Przepisy z FC -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-journal-text"></i> Przepisy — przegląd FC</span>
+        <a href="{% url 'recipe_list' %}" class="btn btn-sm btn-outline-secondary">Wszystkie</a>
+    </div>
+    <div class="table-responsive d-none d-md-block">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Danie</th>
+                    <th>Typ</th>
+                    <th>Koszt/porcja</th>
+                    <th>Cena sprzedaży</th>
+                    <th>FC%</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recipes_with_fc %}
+                <tr onclick="location.href='{% url 'recipe_detail' item.recipe.pk %}'" style="cursor:pointer">
+                    <td class="fw-medium">{{ item.recipe.name }}</td>
+                    <td><span class="badge bg-secondary">{{ item.recipe.get_meal_type_display }}</span></td>
+                    <td>
+                        {% if item.cost_per_portion %}
+                            {{ item.cost_per_portion }} PLN
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.recipe.selling_price %}
+                            {{ item.recipe.selling_price }} PLN
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.fc_percentage %}
+                            <span class="fw-bold fc-{{ item.status }}">{{ item.fc_percentage }}%</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.status == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                        {% elif item.status == 'warning' %}
+                            <i class="bi bi-exclamation-circle text-warning"></i>
+                        {% elif item.status == 'ok' %}
+                            <i class="bi bi-check-circle text-success"></i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Brak przepisów — dodaj pierwszy!</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="d-md-none">
+        {% for item in recipes_with_fc %}
+        <a href="{% url 'recipe_detail' item.recipe.pk %}" class="text-decoration-none">
+            <div class="d-flex align-items-center p-3 border-bottom">
+                <div class="flex-grow-1">
+                    <div class="fw-medium text-dark">{{ item.recipe.name }}</div>
+                    <div class="text-muted small">{{ item.recipe.get_meal_type_display }}</div>
+                </div>
+                <div class="text-end">
+                    {% if item.fc_percentage %}
+                        <div class="fw-bold fc-{{ item.status }}">{{ item.fc_percentage }}%</div>
+                        <div class="text-muted small">{{ item.cost_per_portion }} PLN/porcja</div>
+                    {% else %}
+                        <span class="text-muted small">brak ceny</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="text-center text-muted py-4">Brak przepisów</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

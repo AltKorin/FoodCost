@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load foodcost_tags %}
+{% block title %}Składniki{% endblock %}
+{% block page_title_mobile %}Składniki{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'ingredient_create' %}" class="btn btn-primary btn-sm ms-auto">
+    <i class="bi bi-plus"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-basket2"></i> Składniki</h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'ingredient_report' %}" class="btn btn-outline-primary">
+            <i class="bi bi-bar-chart-line"></i> Strategia zakupów
+        </a>
+        <a href="{% url 'ingredient_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nowy składnik
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-sm-5">
+                <input type="text" name="q" value="{{ request.GET.q }}"
+                       class="form-control form-control-sm" placeholder="Szukaj składnika...">
+            </div>
+            <div class="col-8 col-sm-4">
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">Wszystkie kategorie</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.pk }}" {% if request.GET.category == cat.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-4 col-sm-3">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Filtruj</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive d-none d-md-block">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Składnik</th>
+                    <th>Kategoria</th>
+                    <th>Jedn. bazowa</th>
+                    <th>Najlepsza cena</th>
+                    <th>Dostawca</th>
+                    <th class="text-end">Użycie w daniach</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% regroup ingredients by category as grouped %}
+                {% for group in grouped %}
+                    {% if group.grouper %}
+                    <tr class="table-secondary">
+                        <td colspan="6" class="fw-semibold small text-uppercase ps-3">
+                            {{ group.grouper }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% for ing in group.list %}
+                    <tr>
+                        <td class="fw-medium ps-3">{{ ing.name }}</td>
+                        <td class="text-muted small">{{ ing.category|default:"—" }}</td>
+                        <td>{{ ing.get_base_unit_display }}</td>
+                        <td>
+                            {% with best=current_prices|get_item:ing.pk %}
+                            {% if best %}
+                                <span class="fw-semibold">{{ best.price_per_base_unit }} PLN/{{ ing.base_unit }}</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">brak ceny</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="small text-muted">
+                            {% with best=current_prices|get_item:ing.pk %}
+                            {% if best %}{{ best.supplier.name }}{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="text-end">
+                            {% with count=usage_counts|get_item:ing.pk %}
+                            {% if count %}
+                                <span class="badge bg-primary">{{ count }} dań</span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'ingredient_edit' ing.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile -->
+    <div class="d-md-none">
+        {% for ing in ingredients %}
+        <div class="p-3 border-bottom">
+            <div class="d-flex justify-content-between">
+                <div class="fw-medium">{{ ing.name }}</div>
+                {% with best=current_prices|get_item:ing.pk %}
+                {% if best %}
+                    <span class="text-primary fw-semibold">{{ best.price_per_base_unit }} PLN/{{ ing.base_unit }}</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark">brak ceny</span>
+                {% endif %}
+                {% endwith %}
+            </div>
+            <div class="text-muted small mt-1">
+                {{ ing.category|default:"Bez kategorii" }}
+                {% with count=usage_counts|get_item:ing.pk %}
+                {% if count %} · <span class="text-primary">{{ count }} dań</span>{% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

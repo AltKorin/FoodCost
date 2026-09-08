@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Dostawcy{% endblock %}
+{% block page_title_mobile %}Dostawcy{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'supplier_create' %}" class="btn btn-primary btn-sm ms-auto">
+    <i class="bi bi-plus"></i>
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="d-none d-lg-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-truck"></i> Dostawcy</h4>
+    <a href="{% url 'supplier_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nowy dostawca
+    </a>
+</div>
+
+<div class="row g-3">
+    {% for supplier in suppliers %}
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0 fw-bold">{{ supplier.name }}</h6>
+                    <span class="badge bg-secondary">{{ supplier.price_count }} cen</span>
+                </div>
+                {% if supplier.contact_name %}
+                <div class="small text-muted"><i class="bi bi-person"></i> {{ supplier.contact_name }}</div>
+                {% endif %}
+                {% if supplier.phone %}
+                <div class="small text-muted"><i class="bi bi-phone"></i> {{ supplier.phone }}</div>
+                {% endif %}
+                {% if supplier.delivery_days %}
+                <div class="small text-muted mt-1"><i class="bi bi-calendar3"></i> {{ supplier.delivery_days }}</div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent">
+                <div class="d-flex gap-2">
+                    <a href="{% url 'price_update' supplier.pk %}" class="btn btn-outline-primary btn-sm flex-grow-1">
+                        <i class="bi bi-tags"></i> Aktualizuj cennik
+                    </a>
+                    <a href="{% url 'supplier_edit' supplier.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Brak dostawców — dodaj pierwszego przez <a href="/admin/ingredients/supplier/add/">panel admina</a>.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

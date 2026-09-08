@@ -1,0 +1,41 @@
+[
+  {
+    "model": "ingredients.supplier",
+    "pk": 1,
+    "fields": {
+      "name": "Triada",
+      "contact_name": "",
+      "phone": "",
+      "email": "",
+      "notes": "",
+      "delivery_days": "",
+      "is_active": true
+    }
+  },
+  {
+    "model": "ingredients.supplier",
+    "pk": 2,
+    "fields": {
+      "name": "Iglotex",
+      "contact_name": "",
+      "phone": "",
+      "email": "",
+      "notes": "",
+      "delivery_days": "",
+      "is_active": true
+    }
+  },
+  {
+    "model": "ingredients.supplier",
+    "pk": 3,
+    "fields": {
+      "name": "Chef Culinar",
+      "contact_name": "",
+      "phone": "",
+      "email": "",
+      "notes": "",
+      "delivery_days": "",
+      "is_active": true
+    }
+  }
+]
