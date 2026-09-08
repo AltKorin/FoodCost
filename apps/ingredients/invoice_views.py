@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 
 from apps.accounts.decorators import setup_required, pro_required
-from .models import Ingredient, Supplier, SupplierPrice
+from .models import Ingredient, Supplier, SupplierPrice, UNIT_CHOICES
 from .ocr_service import (
     extract_invoice_data, extract_invoice_data_from_image,
     normalize_items, fuzzy_match_ingredients, SUPPORTED_IMAGE_EXTENSIONS,
@@ -138,8 +138,22 @@ def invoice_confirm(request):
             try:
                 price = Decimal(str(price_str).replace(',', '.'))
                 package_size = Decimal(str(package_size_str).replace(',', '.')) if package_size_str else None
-                # organization=org w lookupie — tenant isolation na wpisywanym ID
-                ingredient = Ingredient.objects.get(pk=int(ingredient_id), organization=org)
+
+                if ingredient_id == '__new__':
+                    # Świeża organizacja startuje z pustą listą składników —
+                    # bez tego OCR nie miałby do czego dopasować pierwszą fakturę.
+                    name = item['name'].strip()[:200]
+                    ingredient = Ingredient.objects.filter(organization=org, name__iexact=name).first()
+                    if not ingredient:
+                        valid_units = {u for u, _ in UNIT_CHOICES}
+                        ingredient = Ingredient.objects.create(
+                            organization=org,
+                            name=name,
+                            base_unit=unit if unit in valid_units else 'kg',
+                        )
+                else:
+                    # organization=org w lookupie — tenant isolation na wpisywanym ID
+                    ingredient = Ingredient.objects.get(pk=int(ingredient_id), organization=org)
 
                 SupplierPrice.objects.create(
                     ingredient=ingredient,

@@ -61,7 +61,7 @@
                             <input type="checkbox" name="save_{{ forloop.counter0 }}"
                                    class="form-check-input row-check"
                                    data-row="{{ forloop.counter0 }}"
-                                   {% if item.matched_ingredient_id %}checked{% endif %}>
+                                   checked>
                         </td>
                         <td class="small fw-medium">{{ item.name }}</td>
                         <td>
@@ -92,7 +92,10 @@
                         </td>
                         <td>
                             <select name="ingredient_id_{{ forloop.counter0 }}" class="form-select form-select-sm">
-                                <option value="">— nie dopasowano —</option>
+                                <option value="__new__" {% if not item.matched_ingredient_id %}selected{% endif %}>
+                                    + Utwórz nowy: "{{ item.name }}"
+                                </option>
+                                <option value="">— pomiń —</option>
                                 {% for ing in ingredients_all %}
                                 <option value="{{ ing.pk }}"
                                     {% if item.matched_ingredient_id == ing.pk %}selected{% endif %}>
@@ -107,7 +110,7 @@
                                     <small class="match-low"><i class="bi bi-exclamation-circle"></i> {{ item.match_score|floatformat:0 }}% — sprawdź</small>
                                 {% endif %}
                             {% else %}
-                                <small class="match-none"><i class="bi bi-x-circle"></i> Wybierz ręcznie</small>
+                                <small class="match-none"><i class="bi bi-x-circle"></i> Nowy składnik</small>
                             {% endif %}
                         </td>
                     </tr>
@@ -128,13 +131,16 @@
                     <input type="checkbox" name="save_{{ forloop.counter0 }}"
                            class="form-check-input row-check mt-1"
                            data-row="{{ forloop.counter0 }}"
-                           {% if item.matched_ingredient_id %}checked{% endif %}>
+                           checked>
                     <div class="fw-medium small flex-grow-1">{{ item.name }}</div>
                     <span class="fw-bold">{{ item.price_per_unit }} PLN/{{ item.unit }}</span>
                 </div>
                 <div class="mb-2">
                     <select name="ingredient_id_{{ forloop.counter0 }}" class="form-select form-select-sm">
-                        <option value="">— nie dopasowano —</option>
+                        <option value="__new__" {% if not item.matched_ingredient_id %}selected{% endif %}>
+                            + Utwórz nowy: "{{ item.name }}"
+                        </option>
+                        <option value="">— pomiń —</option>
                         {% for ing in ingredients_all %}
                         <option value="{{ ing.pk }}"
                             {% if item.matched_ingredient_id == ing.pk %}selected{% endif %}>
