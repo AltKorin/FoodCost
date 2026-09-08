@@ -118,9 +118,13 @@ ręczny dostęp poza kontem demo).
    `Organization.plan == 'pro'`. Link w sidebarze widoczny tylko dla planu Pro.
    Organizacja Niedźwiadka przemianowana na **"Hotel Niedźwiadek SPA & Natura"**
    i przestawiona na `plan='pro'` (jedyna organizacja z dostępem na razie).
-   **Brakuje `OPENAI_API_KEY` w `.env` na `kelnerzy`** — bez niego OCR
-   pokaże czytelny błąd zamiast się wywalić, ale nie zadziała. Dodać klucz
-   przed pokazaniem Michałowi.
+   `OPENAI_API_KEY` (Service Account, nie osobisty — przeżywa zmiany na
+   koncie OpenAI Konrada) dodany ręcznie do `.env` na `kelnerzy` przez usera
+   (nie wklejany w czacie — świadomie, żeby nie trafił do transkryptu),
+   zweryfikowany `client.models.list()` z kontenera — auth działa, `gpt-4o`
+   dostępny. **Nie przetestowane jeszcze z prawdziwą fakturą** (upload → OCR
+   → potwierdzenie → zapis SupplierPrice) — zrobić z Michałem przy okazji
+   pierwszego prawdziwego wgrania.
 5. **Migracja danych Hotelu Niedźwiadek** — realne ceny/składniki z produkcji
    `foodcost.sudomie.pl` (MySQL/GoDaddy) do organizacji Niedźwiadek w
    fc.sudomie.pl (Postgres) — dopiero po zgodzie Michała, seed testowy
