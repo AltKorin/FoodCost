@@ -125,6 +125,14 @@ ręczny dostęp poza kontem demo).
    dostępny. **Nie przetestowane jeszcze z prawdziwą fakturą** (upload → OCR
    → potwierdzenie → zapis SupplierPrice) — zrobić z Michałem przy okazji
    pierwszego prawdziwego wgrania.
+   **Znaleziony i naprawiony blocker przed testem:** organizacja Niedźwiadka
+   miała 0 dostawców i 0 składników — dropdown w kroku potwierdzenia miał
+   tylko "nie dopasowano", więc fizycznie nie dało się nic zapisać z
+   pierwszej faktury. Dodana opcja "+ Utwórz nowy składnik" (domyślna gdy
+   fuzzy match nic nie znajdzie, dedup po `name__iexact`), checkbox "zapisz"
+   teraz domyślnie zaznaczony na każdym wierszu. Dostawcę Michał musi i tak
+   dodać ręcznie przez UI (Dostawcy → Nowy) przed pierwszym wgraniem —
+   to zostało celowo, żeby nie wrzucać fejkowych danych do jego organizacji.
 5. **Migracja danych Hotelu Niedźwiadek** — realne ceny/składniki z produkcji
    `foodcost.sudomie.pl` (MySQL/GoDaddy) do organizacji Niedźwiadek w
    fc.sudomie.pl (Postgres) — dopiero po zgodzie Michała, seed testowy
