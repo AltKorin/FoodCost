@@ -130,9 +130,12 @@ ręczny dostęp poza kontem demo).
    tylko "nie dopasowano", więc fizycznie nie dało się nic zapisać z
    pierwszej faktury. Dodana opcja "+ Utwórz nowy składnik" (domyślna gdy
    fuzzy match nic nie znajdzie, dedup po `name__iexact`), checkbox "zapisz"
-   teraz domyślnie zaznaczony na każdym wierszu. Dostawcę Michał musi i tak
-   dodać ręcznie przez UI (Dostawcy → Nowy) przed pierwszym wgraniem —
-   to zostało celowo, żeby nie wrzucać fejkowych danych do jego organizacji.
+   teraz domyślnie zaznaczony na każdym wierszu.
+   **Update:** dostawca też jest teraz opcjonalny na wgrywaniu — puste pole
+   = `_match_supplier()` próbuje dopasować `supplier_name` wyciągnięty przez
+   AI do istniejących `Supplier` (overlap słów), a na ekranie potwierdzenia
+   jest dropdown z opcją "+ Utwórz nowy" (ten sam wzorzec co dla składników).
+   Michał w ogóle nie musi nic zakładać ręcznie przed pierwszym testem.
 5. **Migracja danych Hotelu Niedźwiadek** — realne ceny/składniki z produkcji
    `foodcost.sudomie.pl` (MySQL/GoDaddy) do organizacji Niedźwiadek w
    fc.sudomie.pl (Postgres) — dopiero po zgodzie Michała, seed testowy
