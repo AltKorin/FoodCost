@@ -2,6 +2,60 @@
 
 ---
 
+## Sesja 2026-09-08 (3) — Dostawca z OCR, eksport CSV/Excel/Word
+
+Kontynuacja. User: "czy dostawcę też mógłby ściągać z faktury?" → potem
+"jeszcze eksport do pliku — excel, word, csv i mamy chyba wszystko."
+
+### Zrobiono
+- **Dostawca z OCR:** pole dostawcy na wgrywaniu faktury opcjonalne —
+  puste = `_match_supplier()` (overlap słów, jak fuzzy_match_ingredients)
+  dopasowuje `supplier_name` wyciągnięty przez AI do istniejących `Supplier`.
+  Ekran potwierdzenia dostał dropdown dostawcy z opcją "+ Utwórz nowy" —
+  ten sam wzorzec co składniki. Michał nie musi nic zakładać ręcznie przed
+  pierwszym testem OCR.
+- **Eksport CSV/Excel składników** (`apps/ingredients/export_views.py`) —
+  jeden wiersz na (składnik, aktualna cena dostawcy), przycisk przy widoku
+  Składniki. `openpyxl` dla xlsx.
+- **Eksport Word menu** (`apps/recipes/export_views.py`) — tabela dań z
+  kosztem/porcję i FC%, dokument do pokazania klientowi (nie dane do
+  analizy — stąd Word, nie kolejny arkusz). `python-docx`.
+- **Znaleziony i naprawiony gap:** lokalne repo nie miało migracji
+  `recipes.0002` (katalog migracji root-owned od kwietnia, bez sudo nie
+  dało się dopisać pliku — ani tu, ani na `proxmox`). Odkryte dopiero przy
+  próbie realnego testu funkcjonalnego eksportu (Recipe/Menu query wywala
+  się bez tej migracji). Nie naprawione w lokalnym repo (brak sudo) —
+  produkcja ma poprawny stan, opisane jako otwarty punkt w HANDOFF z
+  dokładną ścieżką skąd wziąć plik jak ktoś zdobędzie sudo.
+
+### Zadziałało
+- **Realny test funkcjonalny przed wdrożeniem eksportu** — tymczasowy
+  Postgres + kontener web (nie produkcja), seed danych testowych, wywołanie
+  wszystkich trzech endpointów przez zalogowany `django.test.Client`,
+  weryfikacja magic bytes ZIP dla xlsx/docx i treści CSV. To złapało brak
+  migracji 0002 ZANIM dotknęło produkcji — `manage.py check` (użyty przy
+  poprzednich zmianach) nie wykrywa problemów ze stanem bazy, bo nie łączy
+  się z bazą.
+- Wzorzec "dropdown z opcją + Utwórz nowy" (wprowadzony dla składników w
+  poprzedniej sesji) przeniesiony 1:1 na dostawcę — spójne UX, mniej kodu
+  do wymyślenia od zera.
+
+### Nie zadziałało
+- Pierwsza próba `docker compose up -d --build web` po wdrożeniu OCR z
+  dostawcą dała chwilowy 502 (nginx złapał moment restartu kontenera) —
+  samo się naprawiło w ~26s, fałszywy alarm.
+- Curl z lokalnej maszyny do fc.sudomie.pl dawał losowe `000` — okazało się
+  to problemem z IPv6 na tej sieci, nie z serwerem (`curl -4` stabilne
+  200 z hosta `kelnerzy` i z lokalnej maszyny).
+
+### Następne kroki
+- Realny test OCR z Michałem na żywej fakturze — wciąż nie zrobiony.
+- Zdobyć sudo na tej maszynie i naprawić `apps/*/migrations/` (chown),
+  dograć `recipes.0002` do lokalnego repo — patrz HANDOFF pkt 8.
+- Model monetyzacji OCR dla przyszłych klientów — wciąż nierozstrzygnięty.
+
+---
+
 ## Sesja 2026-09-08 (2) — Port OCR faktur + wdrożenie na produkcję
 
 Kontynuacja poprzedniej sesji (archiwizacja foodcost.sudomie.pl). User: "zacznij

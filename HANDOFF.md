@@ -143,6 +143,23 @@ ręczny dostęp poza kontem demo).
 6. **Monetyzacja OCR dla reszty klientów** — na razie tylko ręczne przełączenie
    `plan='pro'` w shellu. Docelowo albo płatność per-token/wgranie, albo prosty
    abonament — nierozstrzygnięte, do decyzji jak będzie pierwszy klient płacący.
+7. **Eksport (2026-09-08) — WDROŻONE na produkcję.** CSV + Excel (`openpyxl`)
+   listy składników z aktualnymi cenami dostawców — przycisk przy widoku
+   Składniki (`apps/ingredients/export_views.py`). Word (`python-docx`)
+   eksport Menu z rozbiciem kosztu/porcję i FC% — przycisk przy szczególe
+   Menu (`apps/recipes/export_views.py`). Zweryfikowane end-to-end na
+   tymczasowym stosie Postgres+Django z realnym Client i danymi testowymi
+   (nie tylko `manage.py check`) — patrz SUMMARY sesji.
+8. **Znany i naprawiony w tej sesji gap: brak migracji `recipes.0002` lokalnie.**
+   Katalog `apps/*/migrations/` jest root-owned od kwietniowego bind-moutna
+   Dockera (patrz stary wpis niżej w tym pliku) — bez sudo (ani na tej
+   maszynie, ani na `proxmox`) nie da się tam nic dopisać. Migracja `0002`
+   ŻYJE na produkcji (`kelnerzy`), ale nie w lokalnym repo git — jeśli ktoś
+   kiedyś zrobi `git clone` tego repo i spróbuje odpalić migracje od zera,
+   brakujący plik wywali błąd przy modelach `Recipe`/`Menu`. Fix: zdobyć
+   sudo na tej maszynie i `sudo chown -R $(whoami) apps/*/migrations/`,
+   potem dograć plik z produkcji (treść w
+   `kelnerzy:/opt/fc-sudomie-pl/apps/recipes/migrations/0002_historicalrecipe_manual_cost_override_and_more.py`).
 
 ---
 
