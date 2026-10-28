@@ -796,3 +796,7 @@ realna potrzeba pokazania narzędzia.
 - Dane do pokazów (`15eaa37`, wdrożone 19:37): kuchnia weselna w `apps/core/data/demo.json` — historia cen, 3 pakiety
   (w celu / ponad celem / niekompletny koszt). Pierwsza wersja miała nierealne FC 4,5% (cena całego wesela przy 5 daniach) —
   poprawione na obiady weselne. `seed --reset` zastąpił konto z `demo12345` (#479 zamknięte).
+- Przykładowa faktura w demo (`ac8a75f`) + poprawka paska zgody (`e44c6bf`), wdrożone ~20:00: na produkcji przy widocznym
+  pasku zgody, 1280 i 390 px — zapisano 7 cen, obiad komunijny z „brak ceny” → 21,6%, 0 błędów JS; GA w `dataLayer` na 3 stronach.
+- Nie zadziałało za pierwszym razem: faktura z Makro z masłem kupowanym w Mleczarni — druga cena u innego dostawcy nie zmienia
+  kosztu (najtańsza wygrywa); faktura przerobiona na towary z Makro. Test na produkcji złapał pasek zgody zasłaniający przycisk.

@@ -15,6 +15,9 @@
   `/register/`, `/regulamin/` (zasada wdrożeń) → smoke.
 - **Konto do pokazów** `demo@fc.sudomie.pl` (Restauracja Demo, nie wygasa): hasło = `DEMO_PASSWORD` z `.env` na serwerze
   (`ssh kelnerzy grep DEMO_PASSWORD /opt/fc-sudomie-pl/.env`). Dane z `apps/core/data/demo.json` (`15eaa37`, wdrożone 19:37).
+  **Przykładowa faktura** (`ac8a75f`, wdrożone 20:00): w demo i na koncie do pokazów „Odczytaj przykładową fakturę” —
+  gotowy wynik OCR z `apps/core/data/demo-faktura.json` przez prawdziwe dopasowanie i zatwierdzenie, bez OpenAI.
+  Pozycje tylko z dostawcy, od którego demo już kupuje (Makro) — inaczej podwyżka nie zmienia kosztu (liczy się najtańsza cena).
   **Przed pokazem**: `ssh kelnerzy 'cd /opt/fc-sudomie-pl && docker compose exec -T web python manage.py seed --reset'`.
 - **INCYDENT 28.10 18:00–19:17**: pierwszy `docker build` → ext4 LXC 120 `emergency_ro` (pula LVM-thin hosta `kawaleryjska`
   przepełniona; 128 GB przydziałów na 58 GB puli) → fc i kelnerzy 502. Naprawa: `pct stop/fsck/start 120` (Konrad),
@@ -22,6 +25,9 @@
   **Przed każdym buildem na 120 sprawdzić pulę hosta** (`lvs pve/data`) i czyścić build cache po wdrożeniu.
 
 ### Gotcha (28.10)
+- Pasek zgody GA jest `position-fixed` na dole — zasłaniał ostatni przycisk strony (`e44c6bf`: margines body, gdy widoczny).
+  Lokalnie bez `GA_MEASUREMENT_ID` paska nie ma: testy przycisków na dole strony rób też na produkcji.
+- W HTML `gtag('config', 'G\u002D…')` (escapejs) — `grep` po ID liczy 1 trafienie; sprawdzaj `dataLayer` w przeglądarce.
 - Wysyłka: `rsync -rltz` (bez `-a` — nie nadpisywać właściciela/uprawnień na serwerze), wykluczenia jak w HANDOFF, w tym
   `docker-compose.override.yml` (lokalny port 8080 — na produkcji otworzyłby nginx).
 - Lokalnie uruchamiaj TYLKO `postgres web` (+ `nginx` z własnym portem) pod `-p fc-local` — samo `up` podniosłoby
