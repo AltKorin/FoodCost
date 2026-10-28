@@ -800,3 +800,4 @@ realna potrzeba pokazania narzędzia.
   pasku zgody, 1280 i 390 px — zapisano 7 cen, obiad komunijny z „brak ceny” → 21,6%, 0 błędów JS; GA w `dataLayer` na 3 stronach.
 - Nie zadziałało za pierwszym razem: faktura z Makro z masłem kupowanym w Mleczarni — druga cena u innego dostawcy nie zmienia
   kosztu (najtańsza wygrywa); faktura przerobiona na towary z Makro. Test na produkcji złapał pasek zgody zasłaniający przycisk.
+- Oferty włączone na produkcji + przykładowe oferty w demo (`5c9c771`); repozytorium przygotowane, push do GitHuba czeka na zgodę.

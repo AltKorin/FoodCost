@@ -1,5 +1,11 @@
 # HANDOFF — FoodCost SaaS
 
+## 2026-10-28 wieczór: Oferty WŁĄCZONE, repozytorium przygotowane
+
+- `OFFERS_ENABLED=True` na produkcji (20:10). Demo i konto do pokazów mają 2 oferty (`apps/core/data/demo.json` → `offers`).
+- GitHub: przygotowane do prywatnego `AltKorin/FoodCost` (gałąź `master`, README), push czeka na zgodę (#484).
+  Historia przejrzana pod sekrety: tylko wzorce z `.env.example` i nieaktywne `demo12345` ze starego seeda; brak danych klientów.
+
 ## 2026-10-28: wyrównanie git ↔ produkcja + demo bez rejestracji — WDROŻONE 19:25 (`af539fd`)
 
 - **Git = produkcja**: commit `7a23a35` zawiera 32 pliki wdrażane wybiórczo od 8.09 (sha256 = `/opt/fc-sudomie-pl`).
