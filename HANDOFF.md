@@ -3,7 +3,8 @@
 ## 2026-10-28 wieczór: Oferty WŁĄCZONE, repozytorium przygotowane
 
 - `OFFERS_ENABLED=True` na produkcji (20:10). Demo i konto do pokazów mają 2 oferty (`apps/core/data/demo.json` → `offers`).
-- GitHub: przygotowane do prywatnego `AltKorin/FoodCost` (gałąź `master`, README), push czeka na zgodę (#484).
+- GitHub: **prywatne** https://github.com/AltKorin/FoodCost (gałąź `master`), wypchnięte 28.10. Push: `git -c credential.helper= -c
+  credential.helper='!gh auth git-credential' push` (git nie ma zapisanego logowania; albo raz `gh auth setup-git`).
   Historia przejrzana pod sekrety: tylko wzorce z `.env.example` i nieaktywne `demo12345` ze starego seeda; brak danych klientów.
 
 ## 2026-10-28: wyrównanie git ↔ produkcja + demo bez rejestracji — WDROŻONE 19:25 (`af539fd`)
