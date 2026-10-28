@@ -13,7 +13,9 @@
   `docs`) → do `.env`: `DEMO_MAX=200`, `OFFERS_ENABLED=False`, `DEMO_PASSWORD` → `docker compose up -d --build web` →
   `migrate` (accounts.0003, offers.0001; sprawdzić najpierw `showmigrations`) → `collectstatic` → GA/Consent na `/`,
   `/register/`, `/regulamin/` (zasada wdrożeń) → smoke.
-- **Konto `demo@fc.sudomie.pl` NA PRODUKCJI ISTNIEJE i działa z hasłem `demo12345`** (stary `seed`) — czeka na decyzję (#479).
+- **Konto do pokazów** `demo@fc.sudomie.pl` (Restauracja Demo, nie wygasa): hasło = `DEMO_PASSWORD` z `.env` na serwerze
+  (`ssh kelnerzy grep DEMO_PASSWORD /opt/fc-sudomie-pl/.env`). Dane z `apps/core/data/demo.json` (`15eaa37`, wdrożone 19:37).
+  **Przed pokazem**: `ssh kelnerzy 'cd /opt/fc-sudomie-pl && docker compose exec -T web python manage.py seed --reset'`.
 - **INCYDENT 28.10 18:00–19:17**: pierwszy `docker build` → ext4 LXC 120 `emergency_ro` (pula LVM-thin hosta `kawaleryjska`
   przepełniona; 128 GB przydziałów na 58 GB puli) → fc i kelnerzy 502. Naprawa: `pct stop/fsck/start 120` (Konrad),
   `docker builder prune -af` + usunięte 3 obrazy `before-*` (zostaje `before-trial30-20260921`), `pct fstrim 120` → pula 81%.

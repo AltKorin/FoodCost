@@ -793,4 +793,6 @@ realna potrzeba pokazania narzędzia.
   `/offers/` 404 (flaga), kelnerzy 200, przeklikanie demo na produkcji 390/1280 px bez błędów JS.
 - Awaria: build dobił przepełnioną pulę LVM-thin hosta `kawaleryjska` → ext4 tylko do odczytu → fc i kelnerzy 502 przez ~77 min.
   Naprawa przez Konrada na hoście (fsck, fstrim), sprzątanie build cache. Przyczyna u źródła (overcommit) — zadanie infrastruktury.
-- Konto `demo@fc.sudomie.pl` z hasłem `demo12345` istnieje na produkcji — czeka na decyzję (#479).
+- Dane do pokazów (`15eaa37`, wdrożone 19:37): kuchnia weselna w `apps/core/data/demo.json` — historia cen, 3 pakiety
+  (w celu / ponad celem / niekompletny koszt). Pierwsza wersja miała nierealne FC 4,5% (cena całego wesela przy 5 daniach) —
+  poprawione na obiady weselne. `seed --reset` zastąpił konto z `demo12345` (#479 zamknięte).
