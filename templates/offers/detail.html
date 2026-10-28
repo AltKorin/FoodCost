@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}{{ offer.title }}{% endblock %}
+{% block content %}
+<a href="{% url 'offers:list' %}">← Oferty</a>
+<div class="d-flex flex-wrap justify-content-between gap-3 mt-3 mb-4"><div><h1>{{ offer.title }}</h1><p class="text-muted">{{ offer.number }} · {{ offer.get_status_display }} · {{ offer.client_name }}</p></div><div>{% if user.role != 'viewer' %}<a class="btn btn-outline-secondary" href="{% url 'offers:edit' offer.pk %}">Edytuj</a>{% endif %} <a class="btn btn-primary" href="{% url 'offers:print' offer.pk %}" target="_blank" rel="noopener">Dokument dla klienta / PDF</a></div></div>
+<p>{{ offer.date_from }} – {{ offer.date_to }} · {{ offer.persons }} osób</p>
+{% for line in offer.lines.all %}<div class="border-bottom py-3"><div class="d-flex flex-wrap justify-content-between gap-2"><strong>{{ line.description }}</strong><span>{{ line.total|floatformat:2 }} zł</span></div><p class="small mb-1">{{ line.get_kind_display }} · {{ line.quantity }} {{ line.unit }} × {{ line.unit_price }} zł</p><div class="text-muted small">{{ line.details|linebreaksbr }}</div></div>{% endfor %}
+<div class="py-4"><h2 class="h4">Razem: {{ offer.total|floatformat:2 }} zł</h2><p>Wpłata wstępna {{ offer.deposit_pct }}%: {{ offer.deposit|floatformat:2 }} zł</p></div>
+<section class="border-top pt-4"><h2 class="h4">Kalkulacja wewnętrzna gastronomii</h2><p class="small text-muted">Koszty zapisane przy wyborze lub odświeżeniu menu. Te informacje nie pojawiają się w dokumencie dla klienta.</p><p>Sprzedaż wyżywienia: {{ offer.gastronomy_total|floatformat:2 }} zł · Znane koszty: {{ offer.gastronomy_cost|floatformat:2 }} zł</p>{% if offer.food_cost_pct != None %}<p>Food cost gastronomii: <strong>{{ offer.food_cost_pct }}%</strong></p>{% else %}<p class="text-warning">Brak pełnych kosztów menu lub ceny sprzedaży. Nie można obliczyć wiarygodnego food cost.</p>{% endif %}</section>
+{% if offer.internal_notes %}<h2 class="h5">Notatki wewnętrzne</h2>{{ offer.internal_notes|linebreaks }}{% endif %}
+{% if offer.terms %}<h2 class="h5">Warunki dla klienta</h2>{{ offer.terms|linebreaks }}{% endif %}
+{% endblock %}

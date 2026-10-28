@@ -22,6 +22,8 @@ class Organization(models.Model):
     ocr_trial_started_at = models.DateTimeField('początek próby OCR', null=True, blank=True, editable=False)
     ocr_trial_pages_used = models.PositiveIntegerField('wykorzystane strony OCR', default=0, editable=False)
     ocr_access_requested_at = models.DateTimeField('zgłoszenie dalszego dostępu OCR', null=True, blank=True, editable=False)
+    # Piaskownica z „Wypróbuj demo” (apps.core.demo): usuwana po tej chwili. Puste = prawdziwy lokal.
+    demo_until = models.DateTimeField('demo do', null=True, blank=True, db_index=True, editable=False)
 
     OCR_TRIAL_DAYS = 30
     OCR_TRIAL_PAGES = 30
@@ -44,6 +46,8 @@ class Organization(models.Model):
 
     @property
     def ocr_available(self):
+        if self.demo_until:  # every read costs money at OpenAI; the demo shows the rest of the app
+            return False
         return self.plan == self.PLAN_PRO or (self.ocr_trial_days_left > 0 and self.ocr_trial_pages_left > 0)
 
     history = HistoricalRecords()

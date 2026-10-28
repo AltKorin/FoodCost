@@ -106,3 +106,18 @@ Puste stany z CTA zamiast pustych tabel:
 - Alerty FC% (tygodniowy digest — dania które przekroczyły target)
 
 From: `noreply@sudomie.pl` (lub dedykowany dla fc.sudomie.pl)
+
+## Odświeżenie 2026-09-21
+
+- Kierunek: spokojny interfejs użytkowy, inspirowany odstępami i hierarchią
+  lokalnego projektu Infinite Beauty. Bootstrap 5 pozostaje bazą.
+- Zieleń marki `#2d6a4f` zachowana; tło `#f7f8f5`, jasny sidebar `#eff2ed`,
+  tekst `#24352c`, tekst pomocniczy `#616d65`, linie `#dce2da`.
+- Systemowe fonty, bez dodatkowych zasobów typograficznych. Małe promienie,
+  brak dekoracyjnych animacji i cieni; statystyki oddzielone liniami.
+- Publiczny kalkulator: pola i wynik obok siebie na desktopie, pionowo na
+  telefonie; format PLN zgodny z polską lokalizacją, walidacja ceny,
+  wynik ogłaszany przez `aria-live`. Pozostała kwota nie jest opisana jako zysk.
+- Nawigacja mobilna korzysta z Bootstrap offcanvas (Escape, backdrop,
+  focus trap i powrót fokusu). Link do pominięcia nawigacji dla klawiatury.
+- Zachowano adresy, nazwy nawigacji i istniejącą rodzinę Bootstrap Icons.

@@ -20,6 +20,8 @@ def reserve_read(organization_id, pages, request_id):
     if not 1 <= pages <= 10:
         raise ValueError('Możesz odczytać od 1 do 10 stron naraz.')
     org = Organization.objects.select_for_update().get(pk=organization_id)
+    if org.demo_until:
+        raise ValueError('W demo odczyt faktur jest wyłączony — załóż własne konto, żeby wypróbować OCR (30 dni próby).')
     if OCRRead.objects.filter(pk=request_id).exists():
         raise ValueError('Ten odczyt został już wysłany. Poczekaj na wynik lub wybierz plik ponownie.')
     OCRRead.objects.filter(

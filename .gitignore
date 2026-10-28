@@ -9,3 +9,6 @@ db.sqlite3
 cloudflared/config.yml
 cloudflared/*.json
 .DS_Store
+
+**/.migrations-backup-*/
+legacy-foodcost/db-dump/

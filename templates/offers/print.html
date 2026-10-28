@@ -1,0 +1,12 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ offer.number }} — {{ offer.title }}</title><style>
+body{font:16px/1.6 system-ui,sans-serif;color:#24352c;max-width:850px;margin:40px auto;padding:0 24px}h1{font-size:30px}h2{font-size:20px}.line{padding:16px 0;border-bottom:1px solid #dce2da;break-inside:avoid}.sum{text-align:right;font-size:20px}button{padding:12px 18px;cursor:pointer}small{color:#616d65}@media print{body{margin:0;max-width:none;font-size:11pt}button,.print-help{display:none}@page{margin:18mm}}
+</style></head><body>
+<button type="button" onclick="window.print()">Drukuj / zapisz jako PDF</button><p class="print-help">W oknie drukowania wybierz „Zapisz jako PDF”, aby pobrać dokument dla klienta.</p>
+<h2>{{ offer.seller_name }}</h2>{{ offer.seller_details|linebreaks }}
+<small>Oferta {{ offer.number }}</small><h1>{{ offer.title }}</h1>
+<p><strong>Dla: {{ offer.client_name }}</strong>{% if offer.client_email %}<br>{{ offer.client_email }}{% endif %}</p>{{ offer.client_details|linebreaks }}
+<p>{{ offer.date_from }} – {{ offer.date_to }} · {{ offer.persons }} osób{% if offer.valid_until %}<br>Oferta ważna do: {{ offer.valid_until }}{% endif %}</p>
+{% for line in offer.lines.all %}<div class="line"><strong>{{ line.description }}</strong><div>{{ line.details|linebreaksbr }}</div><small>{{ line.quantity }} {{ line.unit }} × {{ line.unit_price|floatformat:2 }} zł</small><div class="sum">{{ line.total|floatformat:2 }} zł</div></div>{% endfor %}
+<p class="sum"><strong>Razem: {{ offer.total|floatformat:2 }} zł</strong></p><p>Wpłata wstępna {{ offer.deposit_pct }}%: {{ offer.deposit|floatformat:2 }} zł</p>
+{% if offer.terms %}<h2>Warunki i uwagi</h2>{{ offer.terms|linebreaks }}{% endif %}
+</body></html>

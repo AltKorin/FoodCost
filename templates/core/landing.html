@@ -1,114 +1,253 @@
 {% extends "base.html" %}
-{% block title %}Kalkulator food cost — ile możesz wydać na składniki?{% endblock %}
+{% load static %}
+{% block title %}FoodCost: policz koszt pakietu weselnego na osobę{% endblock %}
 {% block extra_head %}
-<meta name="description" content="Darmowy kalkulator food cost dla gastronomii i hoteli. Wpisz cenę dania i docelowy food cost% — od razu zobaczysz maksymalny budżet na składniki, bez liczenia na oko.">
+<meta name="description" content="Przestań wyceniać wesela na oko. Policz budżet na składniki i wpływ wzrostu cen na marżę imprezy. Kalkulator bez konta, FoodCost do ręcznej pracy za darmo.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:site_name" content="FoodCost">
+<meta property="og:url" content="https://fc.sudomie.pl/">
+<meta property="og:title" content="Przestań wyceniać wesela na oko. | FoodCost">
+<meta property="og:description" content="Wpisz cenę za osobę i liczbę gości. Zobacz budżet na składniki i ile marży zabierze wzrost cen. Policz swój pakiet z prawdziwych cen za darmo.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Kalkulator food cost",
+  "name": "FoodCost",
   "applicationCategory": "BusinessApplication",
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "PLN"},
-  "description": "Darmowy kalkulator food cost — wpisz cenę dania i docelowy food cost%, dostaniesz maksymalny budżet na składniki."
+  "description": "Kalkulator budżetu na składniki pakietu na osobę i pojedynczego dania, dostępny bez konta. FoodCost pozwala liczyć koszt pakietów z przepisów i cen składników; ręczna praca jest darmowa, odczyt faktur ma bezpłatną próbę 30 dni, do 30 stron na lokal."
 }
 </script>
-<style>
-    .fc-landing { width: 100%; max-width: 880px; margin: 0 auto; }
-    .fc-landing__hero { text-align: center; padding: 2rem 0 1.5rem; }
-    .fc-landing__hero h1 { font-size: 1.85rem; font-weight: 700; }
-    .fc-landing__hero p { color: #6c757d; font-size: 1.05rem; }
-    .fc-calc { background: #fff; border: 1px solid #e9ecef; border-radius: 0.75rem; padding: 1.75rem; margin-bottom: 2.5rem; }
-    .fc-calc__slider-value { font-size: 1.6rem; font-weight: 700; color: var(--fc-primary); }
-    .fc-calc__result { background: var(--fc-bg); border-radius: 0.5rem; padding: 1.25rem; margin-top: 1.25rem; text-align: center; }
-    .fc-calc__result .value { font-size: 2.2rem; font-weight: 700; }
-    .fc-landing section { margin-bottom: 2rem; }
-    .fc-landing h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
-    .fc-landing__cta { text-align: center; padding: 2rem 1.5rem; background: var(--fc-primary); color: #fff; border-radius: 0.75rem; }
-    .fc-landing__cta h2 { color: #fff; }
-    .fc-landing__cta .btn-light { background: #fff; color: var(--fc-primary); font-weight: 600; }
-</style>
 {% endblock %}
 {% block bare_content %}
-<div class="fc-landing">
-    <div class="fc-landing__hero">
-        <span class="d-block mb-2 text-success fw-semibold text-uppercase small"><i class="bi bi-egg-fried"></i> FoodCost — darmowe narzędzie</span>
-        <h1>Ile możesz wydać na składniki, żeby utrzymać food cost?</h1>
-        <p>Koniec liczenia na oko. Wpisz cenę dania i docelowy food cost% — od razu widzisz budżet na składniki.</p>
-    </div>
+<div class="fc-landing" x-data="fcLandingCalculator()">
+    <header class="fc-public-header">
+        <a class="fc-wordmark" href="{% url 'core:dashboard' %}"><i class="bi bi-egg-fried" aria-hidden="true"></i> FoodCost</a>
+        <a href="{% url 'accounts:login' %}" class="btn btn-outline-secondary">Zaloguj się <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+    </header>
 
-    <div class="fc-calc" x-data="fcCalculator()">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-6">
-                <label class="form-label" for="fc-price">Cena sprzedaży dania (PLN)</label>
-                <input type="number" id="fc-price" class="form-control form-control-lg" min="0" step="0.5"
-                       x-model.number="price">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label d-flex justify-content-between" for="fc-pct">
-                    <span>Docelowy food cost</span>
-                    <span class="fc-calc__slider-value" x-text="pct + '%'"></span>
-                </label>
-                <input type="range" id="fc-pct" class="form-range" min="15" max="45" step="1"
-                       x-model.number="pct">
-            </div>
+    <div class="fc-landing__intro fc-landing__intro--photo">
+        <div class="fc-landing__intro-copy">
+        <p class="fc-kicker">Kalkulator dla gastronomii</p>
+        <h1 x-text="mailCampaign ? 'Dobra cena zaczyna się od kosztu składników.' : 'Przestań wyceniać wesela na oko.'">Przestań wyceniać wesela na oko.</h1>
+        <p x-text="mailCampaign ? 'Wpisz cenę dania. Sprawdź, ile możesz przeznaczyć na składniki jednej porcji. Bez zakładania konta.' : 'Wpisz cenę za osobę i liczbę gości. Zobacz, ile możesz wydać na składniki — i ile marży zabierze wzrost cen do dnia imprezy.'">Wpisz cenę za osobę i liczbę gości. Zobacz, ile możesz wydać na składniki — i ile marży zabierze wzrost cen do dnia imprezy.</p>
+        {% if DEMO_ENABLED %}<form method="post" action="{% url 'core:demo' %}" class="fc-demo-start fc-demo-start--hero">{% csrf_token %}<button type="submit" class="btn btn-outline-primary">Wypróbuj demo — bez rejestracji</button></form>{% endif %}
         </div>
+        <figure class="fc-landing__photo">
+            <img src="{% static 'images/kitchen-team-v1.webp' %}" width="1440" height="960" decoding="async" alt="Dwie osoby z zespołu kuchni pracują przy przygotowywaniu dań.">
+        </figure>
+    </div>
 
-        <div class="fc-calc__result">
-            <div class="text-muted small mb-1">Maksymalny koszt składników na porcję</div>
-            <div class="value text-success" x-text="budget.toFixed(2) + ' PLN'"></div>
-            <div class="text-muted small mt-2">
-                Marża brutto: <strong x-text="(price - budget).toFixed(2) + ' PLN'"></strong>
-                (<span x-text="(100 - pct).toFixed(0)"></span>% ceny)
+    <div class="fc-calculators" id="kalkulator">
+        <div class="fc-calc__tabs" role="tablist" aria-label="Co chcesz policzyć?" x-cloak @keydown.arrow-right.prevent="selectTab(tab === 'package' ? 'dish' : 'package', true)" @keydown.arrow-left.prevent="selectTab(tab === 'package' ? 'dish' : 'package', true)" @keydown.home.prevent="selectTab('package', true)" @keydown.end.prevent="selectTab('dish', true)">
+            <button type="button" class="fc-calc__tab" id="fc-package-tab" role="tab" aria-controls="fc-package-panel" :aria-selected="tab === 'package'" :tabindex="tab === 'package' ? 0 : -1" @click="selectTab('package')">Pakiet na osobę</button>
+            <button type="button" class="fc-calc__tab" id="fc-dish-tab" role="tab" aria-controls="fc-dish-panel" :aria-selected="tab === 'dish'" :tabindex="tab === 'dish' ? 0 : -1" @click="selectTab('dish')">Pojedyncze danie</button>
+        </div>
+        <div id="fc-package-panel" :role="'tabpanel'" :aria-labelledby="'fc-package-tab'" tabindex="0" x-show="tab === 'package'">
+            <section class="fc-calc" x-data="fcPackageCalculator()" aria-labelledby="package-calculator-title">
+                <div class="fc-calc__inputs">
+                    <h2 id="package-calculator-title">Policz budżet na imprezę</h2>
+                    <p class="text-muted">Bez konta. Wynik zmienia się podczas wpisywania.</p>
+                    <div class="fc-calc__fields">
+                        <div>
+                            <label class="form-label" for="fc-package-price">Cena pakietu za osobę</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" id="fc-package-price" class="form-control" min="0" max="100000" step="0.01" value="199" inputmode="decimal" x-model.number="price" aria-describedby="fc-package-price-help fc-package-price-error" :aria-invalid="!priceValid">
+                                <span class="input-group-text">zł</span>
+                            </div>
+                            <p class="form-text" id="fc-package-price-help">Używaj tej samej podstawy cen: netto lub brutto.</p>
+                            <p class="text-danger small" id="fc-package-price-error" x-show="!priceValid" x-cloak>Wpisz cenę od 0 do 100 000 zł.</p>
+                        </div>
+                        <div>
+                            <label class="form-label" for="fc-package-guests">Liczba gości</label>
+                            <input type="number" id="fc-package-guests" class="form-control form-control-lg" min="1" max="5000" step="1" value="80" inputmode="numeric" x-model.number="guests" aria-describedby="fc-package-guests-error" :aria-invalid="!guestsValid">
+                            <p class="text-danger small" id="fc-package-guests-error" x-show="!guestsValid" x-cloak>Wpisz całkowitą liczbę gości od 1 do 5 000.</p>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label d-flex justify-content-between align-items-center" for="fc-package-pct"><span>Docelowy food cost</span><strong class="fc-calc__percentage" x-text="pctValid ? pct + '%' : '—'">30%</strong></label>
+                        <input type="range" id="fc-package-pct" class="form-range" min="15" max="45" step="1" value="30" x-model.number="pct" aria-describedby="fc-package-pct-help fc-package-pct-error" :aria-invalid="!pctValid">
+                        <div class="d-flex justify-content-between small text-muted"><span>15%</span><span>45%</span></div>
+                        <p class="form-text mt-3" id="fc-package-pct-help">Część ceny pakietu, którą chcesz wydać na składniki.</p>
+                        <p class="text-danger small" id="fc-package-pct-error" x-show="!pctValid" x-cloak>Ustaw food cost od 15 do 45%.</p>
+                    </div>
+                    <label class="form-label d-flex justify-content-between align-items-center gap-3" for="fc-package-growth"><span>Wzrost cen surowców do dnia imprezy</span><strong class="fc-calc__percentage" x-text="growthValid ? growth + '%' : '—'">10%</strong></label>
+                    <input type="range" id="fc-package-growth" class="form-range" min="0" max="30" step="1" value="10" x-model.number="growth" aria-describedby="fc-package-growth-help fc-package-growth-error" :aria-invalid="!growthValid">
+                    <div class="d-flex justify-content-between small text-muted"><span>0%</span><span>30%</span></div>
+                    <p class="form-text mt-3 mb-0" id="fc-package-growth-help">Sprawdź wybrany scenariusz. To nie prognoza cen.</p>
+                    <p class="text-danger small" id="fc-package-growth-error" x-show="!growthValid" x-cloak>Ustaw wzrost cen od 0 do 30%.</p>
+                </div>
+                <div class="fc-calc__result" role="status" aria-live="polite" aria-atomic="true">
+                    <span class="fc-result-label">Utracona marża na imprezie</span>
+                    <div class="fc-calc__amount" x-text="valid ? money(loss) : 'Brak wyniku'">477,60 zł</div>
+                    <p class="fc-calc__scenario" x-text="valid ? 'Jeśli składniki zdrożeją o ' + growth + '%, tracisz ' + money(loss) + ' marży na tej imprezie.' : 'Uzupełnij poprawnie pola kalkulatora.'">Jeśli składniki zdrożeją o 10%, tracisz 477,60 zł marży na tej imprezie.</p>
+                    <div class="fc-calc__breakdown"><span>Budżet na składniki / osobę</span><strong x-text="valid ? money(budget) : 'Brak wyniku'">59,70 zł</strong></div>
+                    <div class="fc-calc__breakdown"><span>Budżet na składniki / imprezę</span><strong x-text="valid ? money(totalBudget) : 'Brak wyniku'">4 776,00 zł</strong></div>
+                    <p class="fc-calc__note">To przykład, nie prognoza. Prawdziwy koszt policzysz z przepisów i cen z faktur.</p>
+                </div>
+                <noscript><p class="p-3 mb-0">Włącz JavaScript, aby zmieniać wynik. Przykład: 199 zł × 30% = 59,70 zł na składniki / osobę. Dla 80 gości: 4 776,00 zł. Wzrost cen o 10% oznacza 477,60 zł utraconej marży.</p></noscript>
+            </section>
+        </div>
+        <div id="fc-dish-panel" :role="'tabpanel'" :aria-labelledby="'fc-dish-tab'" tabindex="0" x-show="tab === 'dish'">
+    <section class="fc-calc" x-data="fcCalculator()" aria-labelledby="calculator-title">
+        <div class="fc-calc__inputs">
+            <h2 id="calculator-title">Policz budżet na porcję</h2>
+            <p class="text-muted">Bez konta. Wynik zmienia się podczas wpisywania.</p>
+            <div class="mb-4">
+                <label class="form-label" for="fc-price">Cena sprzedaży dania</label>
+                <div class="input-group input-group-lg">
+                    <input type="number" id="fc-price" class="form-control" min="0" max="1000000" step="0.01" value="35" inputmode="decimal" x-model.number="price" aria-describedby="fc-price-help fc-price-error" :aria-invalid="!valid">
+                    <span class="input-group-text">zł</span>
+                </div>
+                <p class="form-text" id="fc-price-help">Używaj tej samej podstawy cen: netto lub brutto.</p>
+                <p class="text-danger small" id="fc-price-error" x-show="!valid" x-cloak>Wpisz cenę od 0 do 1 000 000 zł.</p>
             </div>
+            <label class="form-label d-flex justify-content-between align-items-center" for="fc-pct">
+                <span>Docelowy food cost</span>
+                <strong class="fc-calc__percentage" x-text="pct + '%'">30%</strong>
+            </label>
+            <input type="range" id="fc-pct" class="form-range" min="15" max="45" step="1" value="30" x-model.number="pct" aria-describedby="fc-pct-help">
+            <div class="d-flex justify-content-between small text-muted"><span>15%</span><span>45%</span></div>
+            <p class="form-text mt-3" id="fc-pct-help">To część ceny dania, którą chcesz wydać na składniki.</p>
+        </div>
+        <div class="fc-calc__result" role="status" aria-live="polite" aria-atomic="true">
+            <span class="fc-result-label">Twój budżet na składniki</span>
+            <div class="fc-calc__amount" x-text="valid ? money(budget) : 'Podaj cenę'">10,50 zł</div>
+            <p>na jedną porcję</p>
+            <div class="fc-calc__breakdown">
+                <span>Z ceny dania pozostaje</span>
+                <strong x-text="valid ? money(Number(price) - budget) : 'Brak wyniku'">24,50 zł</strong>
+            </div>
+            <p class="fc-calc__note">Na wynagrodzenia, lokal, pozostałe koszty i zysk. Ta kwota nie jest zyskiem z dania.</p>
+        </div>
+        <noscript><p class="p-3 mb-0">Włącz JavaScript, aby zmieniać wynik. Przykład: 35 zł × 30% = 10,50 zł na składniki.</p></noscript>
+    </section>
+
+    <section class="fc-explanation" aria-labelledby="explanation-title">
+        <h2 id="explanation-title">Skąd ten wynik?</h2>
+        <p>Mnożymy cenę dania przez docelowy food cost. Przy cenie 35 zł i food cost 30% możesz wydać na składniki 10,50 zł. To budżet do porównania z rzeczywistym kosztem przepisu.</p>
+    </section>
+
+
+
         </div>
     </div>
 
-    <section>
-        <h2>Jak liczy ten kalkulator</h2>
-        <p>
-            Food cost% to udział kosztu składników w cenie sprzedaży dania. Jeśli chcesz
-            utrzymać np. 30% food cost przy cenie 35 zł, budżet na składniki to
-            <code>35 zł × 30% = 10,50 zł</code>. Powyżej tego progu danie „zjada" marżę,
-            poniżej — zostawia miejsce na koszty stałe i zysk.
-        </p>
+    <section class="fc-workflow" aria-labelledby="workflow-title">
+        <h2 id="workflow-title">Jak to wygląda w aplikacji</h2>
+        <p class="fc-workflow__lead">Budżet już znasz. Teraz porównaj go z kosztem Twojego pakietu.</p>
+        <div class="fc-workflow__body">
+        <figure class="fc-workflow__visual">
+            <img src="{% static 'images/foodcost-workflow-v1.png' %}" width="1536" height="1024" loading="lazy" decoding="async" alt="Ilustracja: faktura i składniki prowadzą do przepisu, a przepisy składają się na pakiet menu wyceniany na osobę.">
+        </figure>
+        <ol class="fc-workflow__steps">
+            <li><h3>Tworzysz pakiet</h3><p>Na przykład „Wesele — Menu 2”. Dodajesz dania i określasz liczbę porcji na gościa.</p></li>
+            <li><h3>Dodajesz ceny składników</h3><p>Wpisujesz je ręcznie albo wgrywasz zdjęcie lub PDF faktury i zatwierdzasz odczytane pozycje.</p></li>
+            <li><h3>Sprawdzasz food cost pakietu</h3><p>Widzisz koszt na osobę i food cost pakietu. Jeśli któreś danie nie ma jeszcze kosztu, aplikacja pokazuje ostrzeżenie.</p></li>
+        </ol>
+        </div>
     </section>
 
-    <section>
-        <h2>To liczy jeden przepis. A cała karta?</h2>
-        <p>
-            Ten kalkulator daje orientacyjny budżet w kilka sekund — dobry punkt startowy przy
-            wycenie nowego dania. Żeby policzyć rzeczywisty koszt konkretnego przepisu
-            (z realnymi cenami składników od Twoich dostawców, yield factorem na odpad i
-            historią zmian cen), potrzebujesz czegoś więcej niż suwaka.
-        </p>
+    <section class="fc-landing__account" aria-labelledby="account-title">
+        <div>
+            <h2 id="account-title">Zacznij od jednego pakietu</h2>
+            <p>Składniki, przepisy, pakiety i ręczne dodawanie cen są darmowe. Bez karty i automatycznych opłat.</p>
+            <p class="small mt-2">Odczyt faktur: 30 dni próby, do 30 stron na lokal. Próba zaczyna się od pierwszego udanego odczytu.</p>
+        </div>
+        <div class="fc-landing__account-actions">
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary">Policz swój pakiet z prawdziwych cen — za darmo <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            {% if DEMO_ENABLED %}<form method="post" action="{% url 'core:demo' %}" class="fc-demo-start">{% csrf_token %}<button type="submit" class="btn btn-outline-primary">Wypróbuj demo — bez rejestracji</button></form>{% endif %}
+            {% if demo_error %}<p class="text-danger small mb-0" role="alert">{{ demo_error }}</p>{% endif %}
+        </div>
     </section>
 
-    <div class="fc-landing__cta">
-        <h2>Policz realny food cost swojej karty — za darmo</h2>
-        <p>Składniki, dostawcy, przepisy, food cost na żywo. Bez karty kredytowej.</p>
-        <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">Załóż darmowe konto</a>
-    </div>
-
-    <section class="mt-4">
-        <h2>Najczęstsze pytania</h2>
-        <p><strong>Ile powinien wynosić food cost?</strong><br>
-        Zależy od kontekstu — karta a la carte zwykle 28–32%, bufet czy imprezy okolicznościowe
-        bywają wyżej. W pełnej wersji FoodCost ustawiasz docelowy % osobno dla każdego kontekstu
-        serwowania (karta, bufet, grupy).</p>
-        <p><strong>Czy ten kalkulator zapisuje moje dane?</strong><br>
-        Nie — liczy wyłącznie w przeglądarce, nic nie wysyłamy na serwer.</p>
+    <section class="fc-faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">Warto wiedzieć</h2>
+        <details>
+            <summary>Czy to działa dla wesel, komunii i Wigilii firmowych?</summary>
+            <p>Tak. W FoodCost tworzysz pakiet na osobę złożony z dań i określasz liczbę porcji na gościa. Koszt pakietu wynika z kosztów przepisów i cen składników. Kalkulator powyżej pokazuje budżet oraz scenariusz wzrostu cen, a nie rzeczywisty koszt Twojego menu.</p>
+        </details>
+        <details>
+            <summary>Jaki food cost ustawić?</summary>
+            <p>Zacznij od celu przyjętego w Twoim lokalu. Inny może obowiązywać dla karty, bufetu i imprez. Wartość 30% w kalkulatorze to przykład, a nie zalecenie dla każdego dania.</p>
+        </details>
+        <details>
+            <summary>Jak działa bezpłatna próba odczytywania faktur?</summary>
+            <p>Załóż konto i dodaj swój lokal. Pierwszy udany odczyt uruchamia 30 dni próby, z limitem 30 stron wspólnym dla zespołu. Zdjęcie to jedna strona, PDF liczymy strona po stronie. Błędy odczytu nie zużywają limitu.</p>
+        </details>
+        <details>
+            <summary>Co po zakończeniu próby?</summary>
+            <p>Odczyt faktur zatrzyma się po 30 dniach lub wykorzystaniu 30 stron. Nie naliczymy opłat. Dane zostają, a ręczne prowadzenie FoodCost nadal jest darmowe. Płatne pakiety są w przygotowaniu; w aplikacji możesz zgłosić zainteresowanie dalszym dostępem.</p>
+        </details>
+        <details>
+            <summary>Czy kalkulator zapisuje moje dane?</summary>
+            <p>Nie. Obliczenia odbywają się w Twojej przeglądarce. Cena i procent wpisane tutaj nie są wysyłane na serwer.</p>
+        </details>
     </section>
+    <footer class="fc-public-footer"><span>FoodCost</span><span>Składniki. Przepisy. Koszty pod kontrolą.</span><span><a href="{% url 'core:regulamin' %}">Regulamin</a> · <a href="https://sudomie.pl/polityka-prywatnosci.html#foodcost">Polityka prywatności</a></span><span>FoodCost tworzy <a href="https://sudomie.pl">sudomie</a> · Komorowski &amp; Windorpski sp. z o.o. · KRS 0001265889 · NIP 5911731573 · <a href="https://sudomie.pl/polityka-prywatnosci.html#administrator">dane spółki</a></span><!-- sudomie:produkty (generuje sudomie.pl/scripts/produkty.py z data/produkty.json — nie edytuj ręcznie) -->
+<nav class="sudomie-produkty" aria-label="Narzędzia sudomie">Narzędzia sudomie: <a href="https://sudomie.pl/" title="Strony internetowe i aplikacje dla firm">sudomie</a> · <a href="https://grafik.sudomie.pl/" title="Darmowy grafik pracy i czas pracy przez NFC — z demo bez rejestracji">Grafik</a> · <a href="https://agenda.sudomie.pl/" title="Agenda grupy na ekranie w holu, w telefonie gościa i u obsługi">HotelAgenda</a> · <a href="https://hotelarstwo.sudomie.pl/" title="Sieci, serwery i RODO dla hoteli">IT dla hotelarstwa</a> · <a href="https://inndesk.pl/" title="System dla hoteli: recepcja, rezerwacje, housekeeping, rozliczenia">Inndesk PMS</a> · <a href="https://sudomie.pl/produkty/">Wszystkie narzędzia sudomie</a></nav>
+<!-- /sudomie:produkty --></footer>
 </div>
 {% endblock %}
 {% block extra_scripts %}
 <script>
+function fcLandingCalculator() {
+    const mailCampaign = new URLSearchParams(window.location.search).get('utm_campaign') === 'gastro_2026_10';
+    return {
+        mailCampaign,
+        tab: mailCampaign ? 'dish' : 'package',
+        selectTab(tab, focus = false) {
+            this.tab = tab;
+            if (focus) this.$nextTick(() => document.getElementById('fc-' + tab + '-tab').focus());
+        },
+    };
+}
+
+function fcNumberInRange(value, min, max) {
+    return value !== null && value !== undefined &&
+        (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) &&
+        Number.isFinite(Number(value)) && Number(value) >= min && Number(value) <= max;
+}
+
+function fcPackageValues(price, guests, pct, growth) {
+    if (!fcNumberInRange(price, 0, 100000) || !fcNumberInRange(guests, 1, 5000) ||
+        !Number.isInteger(Number(guests)) || !fcNumberInRange(pct, 15, 45) || !fcNumberInRange(growth, 0, 30)) return null;
+    const budget = Number(price) * (Number(pct) / 100);
+    const totalBudget = budget * Number(guests);
+    return { budget, totalBudget, loss: totalBudget * (Number(growth) / 100) };
+}
+
+function fcPackageCalculator() {
+    return {
+        price: 199,
+        guests: 80,
+        pct: 30,
+        growth: 10,
+        get priceValid() { return fcNumberInRange(this.price, 0, 100000); },
+        get guestsValid() { return fcNumberInRange(this.guests, 1, 5000) && Number.isInteger(Number(this.guests)); },
+        get pctValid() { return fcNumberInRange(this.pct, 15, 45); },
+        get growthValid() { return fcNumberInRange(this.growth, 0, 30); },
+        get values() { return fcPackageValues(this.price, this.guests, this.pct, this.growth); },
+        get valid() { return this.values !== null; },
+        get budget() { return this.values?.budget ?? null; },
+        get totalBudget() { return this.values?.totalBudget ?? null; },
+        get loss() { return this.values?.loss ?? null; },
+        money(value) { return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', useGrouping: 'always' }).format(value); },
+    };
+}
+
+// Preserve the existing dish calculator's validation, formula and public API.
+function fcDishBudget(price, pct) { return Number(price) * (pct / 100); }
 function fcCalculator() {
     return {
         price: 35,
         pct: 30,
-        get budget() {
-            return (this.price || 0) * (this.pct / 100);
+        get valid() {
+            return this.price !== '' && this.price !== null && Number.isFinite(Number(this.price)) && Number(this.price) >= 0 && Number(this.price) <= 1000000;
         },
+        get budget() { return fcDishBudget(this.price, this.pct); },
+        money(value) { return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value); },
     };
 }
 </script>

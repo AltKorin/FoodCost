@@ -27,6 +27,9 @@ CSRF_TRUSTED_ORIGINS = [
 # OCR faktur (Faza 3) — funkcja płatna (plan Pro), pusty klucz = feature po prostu
 # nie zadziała dla organizacji z dostępem, nie blokuje startu reszty aplikacji.
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_OCR_MODEL = os.environ.get('OPENAI_OCR_MODEL', 'gpt-4.1-mini')
+# Feature flag: puste = brak tagu GA4 na stronie.
+GA_MEASUREMENT_ID = os.environ.get('GA_MEASUREMENT_ID', '').strip()
 
 INSTALLED_APPS = [
     'jazzmin',  # MUSI być przed django.contrib.admin
@@ -41,6 +44,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.ingredients',
     'apps.recipes',
+    'apps.offers',
 ]
 
 MIDDLEWARE = [
@@ -67,6 +71,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.analytics',
+                'apps.core.context_processors.features',
             ],
         },
     },
@@ -154,3 +160,13 @@ JAZZMIN_SETTINGS = {
     'default_icon_parents': 'fas fa-chevron-circle-right',
     'default_icon_children': 'fas fa-circle',
 }
+
+
+# Feature flags (CLAUDE.md: new code ships switched off, turned on per deployment in .env).
+# Oferty: moduł gotowy, ale bez akceptacji — kod i tabela są na produkcji, menu i adresy dopiero po włączeniu.
+OFFERS_ENABLED = os.environ.get('OFFERS_ENABLED', 'False') == 'True'
+# „Wypróbuj demo” (apps.core.demo): najwyżej DEMO_MAX piaskownic naraz, każda znika po DEMO_HOURS;
+# DEMO_PER_HOUR nowych na godzinę łącznie (bez śledzenia IP). DEMO_MAX=0 ukrywa przycisk.
+DEMO_MAX = int(os.environ.get('DEMO_MAX', '0'))
+DEMO_HOURS = int(os.environ.get('DEMO_HOURS', '24'))
+DEMO_PER_HOUR = int(os.environ.get('DEMO_PER_HOUR', '60'))

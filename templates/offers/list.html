@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Oferty{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between gap-3 mb-4"><div><h1>Oferty</h1><p class="text-muted">Menu z FoodCost, noclegi i usługi w jednej ofercie dla klienta.</p></div>{% if user.role != 'viewer' %}<a class="btn btn-primary align-self-start" href="{% url 'offers:create' %}">Nowa oferta</a>{% endif %}</div>
+<form class="d-flex gap-2 mb-4" method="get"><label for="offer-search" class="visually-hidden">Szukaj oferty lub klienta</label><input class="form-control" id="offer-search" name="q" value="{{ q }}" placeholder="Nazwa wydarzenia lub klient"><button class="btn btn-outline-secondary">Szukaj</button></form>
+{% for offer in page_obj %}<a class="d-block border-bottom py-3 text-decoration-none" href="{% url 'offers:detail' offer.pk %}"><div class="d-flex flex-wrap justify-content-between gap-2"><strong>{{ offer.title }}</strong><span>{{ offer.total|floatformat:2 }} zł</span></div><div class="small text-muted">{{ offer.number }} · {{ offer.client_name }} · {{ offer.date_from }} · {{ offer.get_status_display }}</div></a>{% empty %}<p>Nie ma jeszcze ofert pasujących do wyszukiwania. Utwórz ofertę i wybierz menu z cennika swojego lokalu.</p>{% endfor %}
+{% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Poprzednia strona</a>{% endif %}
+{% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Następna strona</a>{% endif %}
+{% endblock %}
