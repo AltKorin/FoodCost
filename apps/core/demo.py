@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Organization, User
 from apps.ingredients.models import Category, Ingredient, Supplier, SupplierPrice
+from apps.offers.models import Offer, OfferLine
 from apps.recipes.models import Menu, MenuItem, Recipe, RecipeContext, RecipeIngredient
 
 DATA = Path(__file__).resolve().parent / 'data' / 'demo.json'  # the content lives in data, not in code (CLAUDE.md)
@@ -67,6 +68,21 @@ def fill(org):
                                    target_fc_pct=D(row['target_fc_pct']), notes=row['notes'])
         for order, (name, qty) in enumerate(row['items']):
             MenuItem.objects.create(menu=menu, recipe=recipes[name], quantity=D(qty), order=order)
+    menus = {m.name: m for m in Menu.objects.filter(organization=org)}
+    today = timezone.localdate()
+    for row in d.get('offers', []):
+        offer = Offer.objects.create(
+            organization=org, seller_name=org.name, seller_details=row['seller_details'], title=row['title'],
+            client_name=row['client_name'], client_details=row['client_details'], persons=row['persons'],
+            date_from=today + timedelta(days=row['in_days']), date_to=today + timedelta(days=row['in_days']),
+            valid_until=today + timedelta(days=row['valid_days']), status=row['status'], deposit_pct=D(row['deposit_pct']),
+            terms=row['terms'], internal_notes=row['internal_notes'])
+        for order, line in enumerate(row['lines']):
+            menu = menus.get(line.get('menu'))
+            OfferLine.objects.create(  # cost snapshot as the panel takes it (offers.views)
+                offer=offer, kind=line['kind'], menu=menu, description=line['description'], details=line['details'],
+                quantity=D(line['quantity']), unit=line['unit'], unit_price=D(line['unit_price']), order=order,
+                cost_per_unit=menu.total_cost_per_person if menu else None, cost_complete=bool(menu and menu.is_cost_complete))
     return org
 
 

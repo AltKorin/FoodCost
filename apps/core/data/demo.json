@@ -1,5 +1,5 @@
 {
-  "_opis": "Restauracja Demo: konto do pokazów (manage.py seed) i piaskownica „Wypróbuj demo” (apps.core.demo). Ceny netto PLN; prices = [dni temu, cena] od najstarszej — ostatnia jest aktualna, wcześniejsze tworzą historię (podwyżka do pokazania). Składnik bez cen = celowe ostrzeżenie o niekompletnym koszcie.",
+  "_opis": "Restauracja Demo: konto do pokazów (manage.py seed) i piaskownica „Wypróbuj demo” (apps.core.demo). Ceny netto PLN; prices = [dni temu, cena] od najstarszej — ostatnia jest aktualna, wcześniejsze tworzą historię (podwyżka do pokazania). Składnik bez cen = celowe ostrzeżenie o niekompletnym koszcie. offers: in_days = data wydarzenia od dziś; koszt pozycji z pakietu to migawka jak w panelu (cost_per_unit).",
   "name": "Restauracja Demo",
   "suppliers": [
     {
@@ -944,6 +944,80 @@
           "Naleśniki z serem",
           "1"
         ]
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "title": "Wesele Anny i Piotra",
+      "client_name": "Anna Kowalska i Piotr Nowak",
+      "client_details": "tel. 600 100 200, anna.piotr@example.com",
+      "in_days": 200,
+      "persons": 120,
+      "valid_days": 21,
+      "status": "sent",
+      "deposit_pct": "30",
+      "seller_details": "ul. Jeziorna 1, 83-400 Kościerzyna · tel. 58 000 00 00",
+      "terms": "Cena obejmuje obsługę kelnerską do 4:00 i dekorację sali. Wpłata wstępna 30% przy podpisaniu umowy, reszta 7 dni przed przyjęciem.",
+      "internal_notes": "Klienci pytali o dorsza zamiast polędwiczki — sprawdzić koszt po ostatniej podwyżce.",
+      "lines": [
+        {
+          "kind": "menu",
+          "menu": "Obiad weselny — premium",
+          "description": "Obiad weselny — premium",
+          "details": "Dwie zupy, polędwiczka i dorsz, pieczeń na kolację, surówki, deser.",
+          "quantity": "120",
+          "unit": "os.",
+          "unit_price": "75.00"
+        },
+        {
+          "kind": "room",
+          "description": "Noclegi dla gości",
+          "details": "Pokój dwuosobowy ze śniadaniem, noc z soboty na niedzielę.",
+          "quantity": "20",
+          "unit": "pokój",
+          "unit_price": "260.00"
+        },
+        {
+          "kind": "service",
+          "description": "Tort weselny",
+          "details": "Trzy piętra, smak do wyboru.",
+          "quantity": "120",
+          "unit": "os.",
+          "unit_price": "18.00"
+        },
+        {
+          "kind": "service",
+          "description": "DJ i nagłośnienie",
+          "details": "",
+          "quantity": "1",
+          "unit": "usługa",
+          "unit_price": "3500.00"
+        }
+      ]
+    },
+    {
+      "title": "Komunia Zosi",
+      "client_name": "Marta Wiśniewska",
+      "client_details": "tel. 600 300 400",
+      "in_days": 60,
+      "persons": 40,
+      "valid_days": 14,
+      "status": "draft",
+      "deposit_pct": "20",
+      "seller_details": "ul. Jeziorna 1, 83-400 Kościerzyna · tel. 58 000 00 00",
+      "terms": "Sala na wyłączność 13:00–19:00.",
+      "internal_notes": "Szkic — koszt niepełny, dopóki koperek nie ma ceny.",
+      "lines": [
+        {
+          "kind": "menu",
+          "menu": "Obiad komunijny",
+          "description": "Obiad komunijny",
+          "details": "Rosół, pierś w sosie pieczarkowym, ziemniaki z koperkiem, surówka, deser.",
+          "quantity": "40",
+          "unit": "os.",
+          "unit_price": "60.00"
+        }
       ]
     }
   ]

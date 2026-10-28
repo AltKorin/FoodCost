@@ -94,6 +94,11 @@ class SeedTests(TestCase):
         menus = {m.name: m for m in Menu.objects.filter(organization=org)}
         self.assertTrue(menus['Obiad weselny — podstawowy'].is_cost_complete)
         self.assertFalse(menus['Obiad komunijny'].is_cost_complete)  # koperek has no price: the warning to show
+        from apps.offers.models import Offer
+        wedding = Offer.objects.get(organization=org, title='Wesele Anny i Piotra')
+        self.assertTrue(wedding.cost_complete)
+        self.assertGreater(wedding.total, wedding.gastronomy_total)  # rooms and services on top of the food
+        self.assertFalse(Offer.objects.get(organization=org, title='Komunia Zosi').cost_complete)
         basic, premium = menus['Obiad weselny — podstawowy'], menus['Obiad weselny — premium']
         self.assertLess(abs(basic.food_cost_pct - basic.target_fc_pct), 3)  # a believable result on target
         self.assertGreater(premium.food_cost_pct, premium.target_fc_pct)  # and one above it, to show the alert
