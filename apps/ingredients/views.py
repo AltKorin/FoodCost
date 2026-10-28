@@ -170,7 +170,7 @@ def ingredient_detail(request, pk):
     prices = ingredient.get_current_prices()
 
     if request.method == 'POST':
-        form = SupplierPriceForm(org, request.POST)
+        form = SupplierPriceForm(org, request.POST, instance=SupplierPrice(ingredient=ingredient))
         if form.is_valid():
             price = form.save(commit=False)
             price.ingredient = ingredient

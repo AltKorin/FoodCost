@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Regulamin FoodCost{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex">{% endblock %}
+{% block bare_content %}
+<article class="fc-legal" style="max-width: 760px; width: 100%;">
+    <p><a href="{% url 'core:dashboard' %}">← FoodCost</a></p>
+    <h1>Regulamin FoodCost</h1>
+    <p class="text-muted">Obowiązuje od 4 października 2026.</p>
+
+    <h2>§ 1. Usługodawca</h2>
+    <p>Usługę FoodCost pod adresem fc.sudomie.pl świadczy <strong>Komorowski &amp; Windorpski sp. z o.o.</strong> z siedzibą w Kościerzynie-Wybudowaniu, ul. Kawaleryjska 3, 83-400 Kościerzyna-Wybudowanie, wpisana do rejestru przedsiębiorców KRS prowadzonego przez Sąd Rejonowy Gdańsk-Północ w Gdańsku, VIII Wydział Gospodarczy KRS, pod numerem 0001265889, NIP 5911731573, REGON 545748920, kapitał zakładowy 5 000 zł (dalej: „Usługodawca”). Kontakt: <a href="mailto:kontakt@sudomie.pl">kontakt@sudomie.pl</a>, tel. +48 668 341 191.</p>
+
+    <h2>§ 2. Czym jest FoodCost</h2>
+    <ol>
+        <li>FoodCost to aplikacja internetowa dla gastronomii do prowadzenia składników, dostawców, cen, przepisów i menu oraz do liczenia kosztu dań.</li>
+        <li>Kalkulator na stronie głównej działa bez konta. Obliczenia wykonuje Twoja przeglądarka, a wpisane wartości nie trafiają na serwer.</li>
+        <li>Pozostałe funkcje wymagają konta. Konto zakłada się dla lokalu. Do lokalu można dodać członków zespołu.</li>
+        <li>FoodCost jest przeznaczony dla osób prowadzących działalność gastronomiczną i ich pracowników.</li>
+    </ol>
+
+    <h2>§ 3. Wymagania techniczne</h2>
+    <p>Do korzystania z FoodCost potrzebujesz aktualnej przeglądarki internetowej z włączonym JavaScriptem i cookies niezbędnymi do logowania oraz adresu e-mail.</p>
+
+    <h2>§ 4. Konto</h2>
+    <ol>
+        <li>Umowę o świadczenie usługi zawierasz, zakładając konto i akceptując regulamin. Umowa jest zawarta na czas nieokreślony.</li>
+        <li>Odpowiadasz za poufność hasła i za działania osób, które dodasz do zespołu lokalu.</li>
+        <li>Możesz w każdej chwili rozwiązać umowę, prosząc o usunięcie konta e-mailem z adresu przypisanego do konta. Usuniemy konto w ciągu 14 dni.</li>
+        <li>Możemy rozwiązać umowę z 14-dniowym wypowiedzeniem przesłanym e-mailem. Gdy konto jest używane niezgodnie z prawem lub regulaminem, możemy je zablokować od razu i podać przyczynę.</li>
+    </ol>
+
+    <h2>§ 5. Opłaty i odczyt faktur</h2>
+    <ol>
+        <li>Konto i ręczne prowadzenie danych są bezpłatne.</li>
+        <li>Odczyt faktur ze zdjęć i plików PDF jest dostępny bezpłatnie na próbę: przez 30 dni od pierwszego udanego odczytu, do 30 stron na lokal. Zdjęcie liczymy jako jedną stronę, PDF strona po stronie. Nieudane odczyty nie zużywają limitu.</li>
+        <li>Po zakończeniu próby odczyt faktur się wyłącza. Nie pobieramy opłat automatycznie i nie prosimy o dane karty. Twoje dane pozostają na koncie.</li>
+        <li>Ewentualne płatne pakiety będą dostępne tylko po Twoim wyraźnym zamówieniu, na warunkach podanych przed zamówieniem.</li>
+    </ol>
+
+    <h2>§ 6. Twoje obowiązki</h2>
+    <ol>
+        <li>Wprowadzaj tylko dane, do których wykorzystania masz prawo.</li>
+        <li>Nie wgrywaj treści bezprawnych ani plików, które mogą zakłócić działanie usługi.</li>
+        <li>Wyniki odczytu faktur, kalkulatora i wyliczeń kosztów mają charakter pomocniczy. Przed zapisaniem sprawdź odczytane pozycje. Decyzje cenowe podejmujesz samodzielnie.</li>
+    </ol>
+
+    <h2>§ 7. Twoje dane w FoodCost i dane zbiorcze</h2>
+    <ol>
+        <li>Dane wprowadzone do FoodCost należą do Ciebie. Nie udostępniamy ich innym użytkownikom.</li>
+        <li>Możemy tworzyć zbiorcze, anonimowe zestawienia cen składników z danych wielu lokali, np. średnią cenę produktu w regionie. Zestawienia nie pozwalają ustalić, który lokal lub dostawca podał daną cenę, i nie zawierają danych osobowych. Akceptując regulamin, udzielasz nam na to nieodpłatnej, niewyłącznej licencji na czas trwania umowy i po jej zakończeniu w odniesieniu do zestawień już utworzonych.</li>
+    </ol>
+
+    <h2>§ 8. Powierzenie przetwarzania danych osobowych</h2>
+    <ol>
+        <li>Jeśli wprowadzasz do FoodCost dane osobowe innych osób (np. osoby kontaktowe, telefony i adresy e-mail dostawców, adresy członków zespołu), jesteś ich administratorem, a Usługodawca przetwarza je w Twoim imieniu (art. 28 RODO). Ten paragraf stanowi umowę powierzenia.</li>
+        <li>Przetwarzamy te dane wyłącznie w celu świadczenia usługi FoodCost, przez czas trwania umowy, w zakresie danych kontaktowych i danych z faktur, które wprowadzisz.</li>
+        <li>Zobowiązujemy się: przetwarzać dane tylko na Twoje udokumentowane polecenie (korzystanie z funkcji aplikacji jest takim poleceniem), zapewnić poufność osób z dostępem do danych, stosować środki bezpieczeństwa z art. 32 RODO (m.in. szyfrowane połączenie, kontrola dostępu, dziennik logowań i zmian), pomagać Ci w realizacji praw osób, których dane dotyczą, powiadomić Cię o naruszeniu ochrony danych bez zbędnej zwłoki, nie później niż w 48 godzin od jego stwierdzenia, i umożliwić Ci audyt w uzgodnionym terminie.</li>
+        <li>Wyrażasz ogólną zgodę na dalsze powierzenie danych podmiotom wymienionym w <a href="https://sudomie.pl/polityka-prywatnosci.html#odbiorcy">polityce prywatności</a> (hosting, Cloudflare, OpenAI do odczytu faktur). O planowanej zmianie tych podmiotów poinformujemy e-mailem z 14-dniowym wyprzedzeniem. Możesz się sprzeciwić, rozwiązując umowę.</li>
+        <li>Po rozwiązaniu umowy usuwamy powierzone dane w ciągu 30 dni, chyba że prawo wymaga ich przechowania. Przed usunięciem możesz poprosić o eksport danych.</li>
+    </ol>
+
+    <h2>§ 9. Dostępność i odpowiedzialność</h2>
+    <ol>
+        <li>Dbamy o ciągłość działania FoodCost, ale nie gwarantujemy dostępności bez przerw. Prace techniczne staramy się prowadzić poza godzinami pracy lokali.</li>
+        <li>W stosunku do przedsiębiorców nasza odpowiedzialność za szkody związane z bezpłatną usługą jest wyłączona w granicach dozwolonych prawem. Wyłączenie nie dotyczy szkód wyrządzonych umyślnie.</li>
+    </ol>
+
+    <h2>§ 10. Reklamacje</h2>
+    <p>Reklamacje wysyłaj na <a href="mailto:kontakt@sudomie.pl">kontakt@sudomie.pl</a>. Opisz problem i podaj adres e-mail konta. Odpowiemy w ciągu 14 dni.</p>
+
+    <h2>§ 11. Przedsiębiorcy na prawach konsumenta</h2>
+    <p>Jeśli prowadzisz jednoosobową działalność gospodarczą, a umowa nie ma dla Ciebie charakteru zawodowego (art. 385⁵ Kodeksu cywilnego), przysługuje Ci ochrona przewidziana dla konsumentów w zakresie postanowień niedozwolonych, rękojmi i prawa odstąpienia od umowy w ciągu 14 dni. Postanowienia § 9 ust. 2 nie ograniczają tej ochrony.</p>
+
+    <h2>§ 12. Zmiany regulaminu i postanowienia końcowe</h2>
+    <ol>
+        <li>Możemy zmienić regulamin z ważnych przyczyn, np. zmiany prawa lub zakresu usługi. O zmianie poinformujemy e-mailem co najmniej 14 dni przed jej wejściem w życie. Jeśli nie akceptujesz zmian, możesz rozwiązać umowę przed tą datą.</li>
+        <li>Zasady przetwarzania danych osobowych opisuje <a href="https://sudomie.pl/polityka-prywatnosci.html#foodcost">polityka prywatności</a>.</li>
+        <li>Do umowy stosuje się prawo polskie. Spory z przedsiębiorcami rozstrzyga sąd właściwy dla siedziby Usługodawcy.</li>
+    </ol>
+</article>
+{% endblock %}

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.db import models
 from simple_history.models import HistoricalRecords
-from apps.ingredients.models import UNIT_CONVERSIONS, UNIT_CHOICES
+from apps.ingredients.models import UNIT_CONVERSIONS, UNIT_CHOICES, units_compatible
 
 
 MEAL_TYPE_CHOICES = [
@@ -107,6 +107,16 @@ class Recipe(models.Model):
         return self.manual_cost_override is not None or self.recipe_ingredients.exists()
 
     @property
+    def is_cost_complete(self):
+        """Koszt kompletny i wiarygodny: ręczny koszt albo KAŻDY składnik ma cenę
+        przeliczalną na jego jednostkę bazową (i dodatnie ilości). Samo istnienie
+        składnika (has_cost_data) nie wystarcza — brakująca cena liczy się jako 0 zł."""
+        if self.manual_cost_override is not None:
+            return True
+        items = list(self.recipe_ingredients.select_related('ingredient'))
+        return bool(items) and all(ri.is_costable() for ri in items)
+
+    @property
     def total_cost(self):
         if self.manual_cost_override is not None:
             return self.manual_cost_override * self.yield_portions
@@ -125,16 +135,14 @@ class Recipe(models.Model):
 
     @property
     def food_cost_pct(self):
-        if not self.selling_price:
-            return None
-        if not self.selling_price:
+        if not self.selling_price or not self.is_cost_complete:
             return None
         pct = (self.cost_per_portion / self.selling_price) * 100
         return pct.quantize(Decimal('0.1'))
 
     @property
     def food_cost_pct_package(self):
-        if not self.package_price_per_person:
+        if not self.package_price_per_person or not self.is_cost_complete:
             return None
         pct = (self.cost_per_portion / self.package_price_per_person) * 100
         return pct.quantize(Decimal('0.1'))
@@ -217,6 +225,15 @@ class RecipeIngredient(models.Model):
                 return price.price_per_base_unit
         return ingredient.get_best_price()
 
+    def is_costable(self):
+        """Cena istnieje, jednostka przepisu przelicza się na bazową, ilość i yield > 0."""
+        return (
+            self.get_price() is not None
+            and units_compatible(self.unit, self.ingredient.base_unit)
+            and self.quantity > 0
+            and bool(self.yield_factor and self.yield_factor > 0)
+        )
+
     def get_cost(self):
         """Koszt tego składnika w przepisie z uwzględnieniem yield factor."""
         price_per_base = self.get_price()
@@ -280,10 +297,10 @@ class Menu(models.Model):
 
     @property
     def is_cost_complete(self):
-        """False, jeśli choć jedno danie w menu nie ma jeszcze żadnej
-        podstawy kosztowej — inaczej suma po cichu liczy brakujące dania
-        jako 0 zł, co zaniża food cost całego menu."""
-        return all(item.recipe.has_cost_data for item in self.items.select_related('recipe'))
+        """False dla pustego menu albo gdy któreś danie nie ma kompletnego kosztu —
+        inaczej suma po cichu liczy brakujące elementy jako 0 zł i zaniża food cost."""
+        items = list(self.items.select_related('recipe'))
+        return bool(items) and all(item.recipe.is_cost_complete for item in items)
 
     @property
     def total_cost_per_person(self):
@@ -294,7 +311,7 @@ class Menu(models.Model):
 
     @property
     def food_cost_pct(self):
-        if not self.package_price_per_person:
+        if not self.package_price_per_person or not self.is_cost_complete:
             return None
         pct = (self.total_cost_per_person / self.package_price_per_person) * 100
         return pct.quantize(Decimal('0.1'))

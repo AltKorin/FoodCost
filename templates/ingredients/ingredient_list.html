@@ -11,7 +11,7 @@
 </div>
 
 <form method="get" class="mb-3" style="max-width: 320px;">
-    <input type="search" name="q" class="form-control" placeholder="Szukaj po nazwie…" value="{{ q }}">
+    <input type="search" aria-label="Szukaj po nazwie" name="q" class="form-control" placeholder="Szukaj po nazwie…" value="{{ q }}">
 </form>
 
 {% if ingredients %}
@@ -23,7 +23,7 @@
                 <th class="d-none d-md-table-cell">Kategoria</th>
                 <th>Jednostka</th>
                 <th class="d-none d-md-table-cell">Najlepsza cena</th>
-                <th></th>
+                <th><span class="visually-hidden">Akcje</span></th>
             </tr>
         </thead>
         <tbody>
@@ -37,9 +37,9 @@
                     {% if price %}{{ price }} PLN / {{ ingredient.get_base_unit_display }}{% else %}<span class="text-muted">brak ceny</span>{% endif %}
                     {% endwith %}
                 </td>
-                <td class="text-end">
-                    <a href="{% url 'ingredients:ingredient-update' ingredient.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                    <a href="{% url 'ingredients:ingredient-delete' ingredient.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                <td class="text-end fc-row-actions">
+                    <a href="{% url 'ingredients:ingredient-update' ingredient.pk %}" class="btn btn-sm btn-outline-secondary" aria-label="Edytuj {{ ingredient.name }}"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    <a href="{% url 'ingredients:ingredient-delete' ingredient.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Usuń {{ ingredient.name }}"><i class="bi bi-trash" aria-hidden="true"></i></a>
                 </td>
             </tr>
             {% endfor %}
@@ -48,7 +48,7 @@
 </div>
 {% else %}
 <div class="fc-empty">
-    <i class="bi bi-carrot"></i>
+    <i class="bi bi-basket2"></i>
     <p class="mb-3">{% if q %}Nic nie pasuje do „{{ q }}”.{% else %}Dodaj pierwszy składnik, żeby móc liczyć koszty przepisów.{% endif %}</p>
     {% if not q %}<a href="{% url 'ingredients:ingredient-create' %}" class="btn btn-primary">Dodaj pierwszy składnik</a>{% endif %}
 </div>

@@ -1,14 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Organization, LoginEvent
+from .models import User, Organization, LoginEvent, OCRRead
 
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'plan', 'accepted_tos_at', 'created_at')
-    list_filter = ('plan',)
+    list_display = ('name', 'slug', 'plan', 'ocr_trial_started_at', 'ocr_trial_pages_used', 'ocr_access_requested_at', 'owner_email')
     search_fields = ('name', 'slug')
-    readonly_fields = ('created_at',)
+    readonly_fields = ('created_at', 'ocr_trial_started_at', 'ocr_trial_pages_used', 'ocr_access_requested_at')
+    list_filter = ('plan', 'ocr_access_requested_at')
+
+
+    @admin.display(description='E-mail właściciela')
+    def owner_email(self, obj):
+        return obj.users.filter(role=User.ROLE_OWNER).values_list('email', flat=True).first() or ''
 
 
 @admin.register(User)
@@ -37,5 +42,18 @@ class LoginEventAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return False
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(OCRRead)
+class OCRReadAdmin(admin.ModelAdmin):
+    list_display = ('organization', 'pages', 'trial', 'status', 'created_at')
+    list_filter = ('status', 'trial')
+    readonly_fields = ('id', 'organization', 'pages', 'trial', 'status', 'created_at')
+    def has_add_permission(self, request):
+        return False
+    def has_change_permission(self, request, obj=None):
+        return False
     def has_delete_permission(self, request, obj=None):
         return False

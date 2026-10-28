@@ -8,10 +8,10 @@
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto" style="min-width: 220px;">
-        <input type="search" name="q" class="form-control" placeholder="Szukaj po nazwie…" value="{{ q }}">
+        <input type="search" aria-label="Szukaj po nazwie" name="q" class="form-control" placeholder="Szukaj po nazwie…" value="{{ q }}">
     </div>
     <div class="col-auto">
-        <select name="meal_type" class="form-select" onchange="this.form.submit()">
+        <select name="meal_type" aria-label="Typ posiłku" class="form-select" onchange="this.form.submit()">
             <option value="">Wszystkie typy</option>
             {% for value, label in meal_type_choices %}
             <option value="{{ value }}" {% if value == meal_type %}selected{% endif %}>{{ label }}</option>
@@ -32,7 +32,7 @@
                 <th class="d-none d-md-table-cell">Typ</th>
                 <th class="d-none d-md-table-cell">Koszt/porcję</th>
                 <th>FC%</th>
-                <th></th>
+                <th><span class="visually-hidden">Akcje</span></th>
             </tr>
         </thead>
         <tbody>
@@ -40,7 +40,7 @@
             <tr>
                 <td><a href="{% url 'recipes:recipe-detail' recipe.pk %}">{{ recipe.name }}</a></td>
                 <td class="d-none d-md-table-cell">{{ recipe.get_meal_type_display }}</td>
-                <td class="d-none d-md-table-cell">{{ recipe.cost_per_portion }} PLN</td>
+                <td class="d-none d-md-table-cell">{{ recipe.cost_per_portion }} PLN{% if not recipe.is_cost_complete %} <span class="text-muted small">(niepełne)</span>{% endif %}</td>
                 <td>
                     {% if recipe.food_cost_pct is not None %}
                     <span class="badge fc-badge fc-{{ recipe.fc_status }}">{{ recipe.food_cost_pct }}%</span>
@@ -48,9 +48,9 @@
                     <span class="badge fc-badge fc-unknown">brak ceny</span>
                     {% endif %}
                 </td>
-                <td class="text-end">
-                    <a href="{% url 'recipes:recipe-update' recipe.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                    <a href="{% url 'recipes:recipe-delete' recipe.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                <td class="text-end fc-row-actions">
+                    <a href="{% url 'recipes:recipe-update' recipe.pk %}" class="btn btn-sm btn-outline-secondary" aria-label="Edytuj {{ recipe.name }}"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                    <a href="{% url 'recipes:recipe-delete' recipe.pk %}" class="btn btn-sm btn-outline-danger" aria-label="Usuń {{ recipe.name }}"><i class="bi bi-trash" aria-hidden="true"></i></a>
                 </td>
             </tr>
             {% endfor %}

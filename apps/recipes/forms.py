@@ -129,7 +129,7 @@ def _set_recipe_field_for_menu(field, organization):
     )
     field.queryset = Recipe.objects.filter(pk__in=[r.pk for r in recipes])
     field.widget.cost_map = {
-        r.pk: (r.cost_per_portion, r.manual_cost_override is not None or bool(r.recipe_ingredients.all()))
+        r.pk: (r.cost_per_portion, r.is_cost_complete)
         for r in recipes
     }
 

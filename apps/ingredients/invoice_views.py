@@ -1,20 +1,25 @@
 """Widoki OCR faktur — wgraj (PDF/zdjęcie) → potwierdź dopasowania → zapisz ceny.
 
-Funkcja płatna (plan Pro) — każde wgranie faktury to koszt tokenów OpenAI Vision.
+Dostęp próbny OCR: 30 dni i 30 stron na organizację. Istniejący plan Pro pozostaje aktywny.
 """
-import os
+import uuid
 import re
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 
-from apps.accounts.decorators import setup_required, pro_required
+from apps.accounts.decorators import setup_required
+from apps.accounts.models import Organization
+from apps.accounts.ocr_access import reserve_read, finish_read, pending_pages
 from .models import Ingredient, Supplier, SupplierPrice, UNIT_CHOICES
 from .ocr_service import (
     extract_invoice_data, extract_invoice_data_from_image,
-    normalize_items, fuzzy_match_ingredients, SUPPORTED_IMAGE_EXTENSIONS,
+    normalize_items, fuzzy_match_ingredients, SUPPORTED_IMAGE_EXTENSIONS, inspect_invoice_file,
 )
 
 
@@ -39,93 +44,108 @@ def _match_supplier(name, suppliers_qs):
     return best
 
 
+def _upload_context(org):
+    org.refresh_from_db()
+    return {
+        'suppliers': Supplier.objects.filter(organization=org),
+        'ocr_org': org,
+        'ocr_reserved': pending_pages(org),
+        'request_id': str(uuid.uuid4()),
+    }
+
+
 @login_required
 @setup_required
-@pro_required
+@require_POST
+def invoice_estimate(request):
+    """Sprawdza dokument i pokazuje koszt w stronach, bez startowania próby."""
+    try:
+        _, _, pages = inspect_invoice_file(request.FILES.get('invoice_file'))
+        org = request.user.organization
+        available = max(0, org.ocr_trial_pages_left - pending_pages(org))
+        pro = org.plan == Organization.PLAN_PRO
+        return JsonResponse({
+            'pages': pages, 'available': available, 'pro': pro,
+            'allowed': pro or (org.ocr_trial_days_left > 0 and pages <= available),
+        })
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+
+@login_required
+@setup_required
+@require_POST
+def invoice_request_access(request):
+    Organization.objects.filter(pk=request.user.organization_id, ocr_access_requested_at__isnull=True).update(ocr_access_requested_at=timezone.now())
+    messages.success(request, 'Zapisaliśmy zainteresowanie dalszym dostępem do OCR. Nie naliczyliśmy żadnej opłaty.')
+    return redirect('ingredients:invoice-upload')
+
+
+@login_required
+@setup_required
 def invoice_upload(request):
-    """Krok 1 — wgranie PDF faktury lub zdjęcia i wybór dostawcy."""
+    """Pierwszy udany odczyt uruchamia 30 dni; limit jest wspólny dla lokalu."""
     org = request.user.organization
-    suppliers = Supplier.objects.filter(organization=org)
-
+    read = None
+    completed = False
     if request.method == 'POST':
-        supplier_id = request.POST.get('supplier_id')  # opcjonalny — puste = wykryj z faktury
-        upload_file = request.FILES.get('invoice_file')
-
-        if not upload_file:
-            messages.error(request, 'Wybierz plik faktury lub zdjęcie.')
-            return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
-
-        if upload_file.size > 20 * 1024 * 1024:  # 20MB limit
-            messages.error(request, 'Plik jest za duży (max 20MB).')
-            return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
-
-        file_ext = os.path.splitext(upload_file.name.lower())[1]
-        is_pdf = file_ext == '.pdf'
-        is_image = file_ext in SUPPORTED_IMAGE_EXTENSIONS
-
-        if not is_pdf and not is_image:
-            messages.error(request, 'Obsługiwane formaty: PDF, JPG, PNG, WEBP.')
-            return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
-
         try:
-            file_bytes = upload_file.read()
-            if is_pdf:
+            supplier_id = request.POST.get('supplier_id')
+            if supplier_id:
+                supplier = get_object_or_404(Supplier, pk=supplier_id, organization=org)
+            file_bytes, file_ext, pages = inspect_invoice_file(request.FILES.get('invoice_file'))
+            try:
+                request_id = uuid.UUID(request.POST.get('request_id', ''))
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise ValueError('Odśwież formularz i wybierz plik ponownie.') from exc
+            read = reserve_read(org.pk, pages, request_id)
+            if file_ext == '.pdf':
                 raw_data = extract_invoice_data(file_bytes)
             else:
                 raw_data = extract_invoice_data_from_image(file_bytes, SUPPORTED_IMAGE_EXTENSIONS[file_ext])
             items = normalize_items(raw_data.get('items', []))
-
             if not items:
-                messages.error(request, 'Nie znaleziono pozycji w fakturze. Sprawdź czy plik jest czytelny.')
-                return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
-
-            ingredients_qs = Ingredient.objects.filter(organization=org, is_active=True)
-            items = fuzzy_match_ingredients(items, ingredients_qs)
-
+                raise ValueError('Nie znaleziono pozycji w fakturze. Sprawdź czytelność pliku. Nie odjęliśmy stron z limitu.')
+            items = fuzzy_match_ingredients(items, Ingredient.objects.filter(organization=org, is_active=True))
             supplier_name = raw_data.get('supplier_name')
             if supplier_id:
-                resolved_supplier_id = int(supplier_id)
+                resolved_supplier_id = supplier.pk
             else:
-                matched_supplier = _match_supplier(supplier_name, suppliers)
-                resolved_supplier_id = matched_supplier.pk if matched_supplier else None
-
+                matched = _match_supplier(supplier_name, Supplier.objects.filter(organization=org))
+                resolved_supplier_id = matched.pk if matched else None
             request.session['invoice_items'] = [
                 {
-                    'name': i['name'],
-                    'price': str(i['price']),
-                    'price_per_unit': str(i['price_per_unit']),
-                    'unit': i['unit'],
+                    'name': i['name'], 'price': str(i['price']),
+                    'price_per_unit': str(i['price_per_unit']), 'unit': i['unit'],
                     'package_size': str(i['package_size']) if i['package_size'] else None,
-                    'vat': i['vat'],
-                    'is_netto': i['is_netto'],
+                    'vat': i['vat'], 'is_netto': i['is_netto'],
+                    'purchased_quantity': i.get('purchased_quantity'),
                     'matched_ingredient_id': i['matched_ingredient'].pk if i['matched_ingredient'] else None,
                     'matched_ingredient_name': i['matched_ingredient'].name if i['matched_ingredient'] else None,
                     'match_score': round(i['match_score'], 2),
-                }
-                for i in items
+                } for i in items
             ]
             request.session['invoice_supplier_id'] = resolved_supplier_id
             request.session['invoice_meta'] = {
-                'supplier_name': supplier_name,
-                'invoice_number': raw_data.get('invoice_number'),
-                'invoice_date': raw_data.get('invoice_date'),
+                'supplier_name': supplier_name, 'invoice_number': raw_data.get('invoice_number'),
+                'invoice_date': raw_data.get('invoice_date'), 'warnings': raw_data.get('warnings', []),
             }
-
+            finish_read(read, success=True)
+            completed = True
             return redirect('ingredients:invoice-confirm')
-
-        except ImportError as e:
-            messages.error(request, f'Brak wymaganej biblioteki: {e}')
-        except ValueError as e:
-            messages.error(request, f'Błąd przetwarzania: {e}')
-        except Exception as e:
-            messages.error(request, f'Nieoczekiwany błąd: {e}')
-
-    return render(request, 'ingredients/invoice_upload.html', {'suppliers': suppliers})
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        except Exception:
+            messages.error(request, 'Odczyt nie powiódł się. Spróbuj ponownie za chwilę. Nie odjęliśmy stron z limitu.')
+        finally:
+            if read and not completed:
+                finish_read(read, success=False)
+                request.session.pop('invoice_items', None)
+    return render(request, 'ingredients/invoice_upload.html', _upload_context(org))
 
 
 @login_required
 @setup_required
-@pro_required
 def invoice_confirm(request):
     """Krok 2 — podgląd wyciągniętych cen, korekta dopasowań, zapis."""
     org = request.user.organization
@@ -164,14 +184,21 @@ def invoice_confirm(request):
                 skipped_count += 1
                 continue
 
-            price_str = request.POST.get(f'price_{i}', item['price_per_unit'])
+            price_str = request.POST.get(f'price_{i}', item['price'])
             unit = request.POST.get(f'unit_{i}', item['unit'])
             package_size_str = request.POST.get(f'package_size_{i}', '')
             is_netto = request.POST.get(f'is_netto_{i}') == '1'
 
             try:
                 price = Decimal(str(price_str).replace(',', '.'))
+                if not price.is_finite() or price < 0:
+                    raise ValueError('Niepoprawna cena')
                 package_size = Decimal(str(package_size_str).replace(',', '.')) if package_size_str else None
+
+                if package_size is not None and (not package_size.is_finite() or package_size <= 0):
+                    raise ValueError('Niepoprawne opakowanie')
+                if unit not in {u for u, _ in UNIT_CHOICES}:
+                    raise ValueError('Niepoprawna jednostka')
 
                 if ingredient_id == '__new__':
                     # Świeża organizacja startuje z pustą listą składników —
@@ -189,7 +216,7 @@ def invoice_confirm(request):
                     # organization=org w lookupie — tenant isolation na wpisywanym ID
                     ingredient = Ingredient.objects.get(pk=int(ingredient_id), organization=org)
 
-                SupplierPrice.objects.create(
+                new_price = SupplierPrice(
                     ingredient=ingredient,
                     supplier=supplier,
                     price=price,
@@ -198,6 +225,8 @@ def invoice_confirm(request):
                     is_netto=is_netto,
                     source_note=source_note,
                 )
+                new_price.clean()  # niezgodna jednostka → pominięcie zamiast cichej, błędnej ceny
+                new_price.save()
                 saved_count += 1
             except Exception:
                 skipped_count += 1

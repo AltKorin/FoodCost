@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.db import models
 from simple_history.models import HistoricalRecords
 
@@ -21,6 +22,11 @@ UNIT_CONVERSIONS = {
     'szt':  {'szt': Decimal('1')},
     'opak': {'opak': Decimal('1')},
 }
+
+
+def units_compatible(from_unit, to_unit):
+    """Czy jednostkę da się przeliczyć na docelową (kg↔g, l↔ml, szt, opak)."""
+    return from_unit == to_unit or UNIT_CONVERSIONS.get(from_unit, {}).get(to_unit) is not None
 
 
 def convert_quantity(quantity, from_unit, to_unit):
@@ -106,9 +112,9 @@ class Ingredient(models.Model):
         return self.name
 
     def get_best_price(self):
-        """Zwraca najtańszą aktualną cenę per jednostka bazowa."""
-        price = self.prices.filter(is_current=True).order_by('price_per_base_unit').first()
-        return price.price_per_base_unit if price else None
+        """Najtańsza aktualna cena per jednostka bazowa; ceny w jednostce niezgodnej ze składnikiem są pomijane."""
+        valid = [p.price_per_base_unit for p in self.prices.filter(is_current=True) if p.has_valid_unit()]
+        return min(valid) if valid else None
 
     def get_current_prices(self):
         return self.prices.filter(is_current=True).select_related('supplier').order_by('price_per_base_unit')
@@ -159,6 +165,21 @@ class SupplierPrice(models.Model):
 
     def __str__(self):
         return f'{self.supplier} — {self.ingredient}: {self.price} / {self.unit}'
+
+    def has_valid_unit(self):
+        """False, gdy cenę nie da się przeliczyć na jednostkę bazową składnika
+        (np. cena za szt dla składnika w kg, opak bez rozmiaru opakowania)."""
+        base = self.ingredient.base_unit
+        if self.unit == 'opak':
+            return bool(self.package_size) or base == 'opak'
+        return units_compatible(self.unit, base)
+
+    def clean(self):
+        if self.ingredient_id and not self.has_valid_unit():
+            raise ValidationError(
+                f'Jednostka „{self.unit}” nie pasuje do jednostki bazowej składnika ({self.ingredient.base_unit}). '
+                'Podaj cenę w kg/g (l/ml) albo jako opakowanie z jego rozmiarem.'
+            )
 
     def _calculate_price_per_base_unit(self):
         base_unit = self.ingredient.base_unit

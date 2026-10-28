@@ -1,0 +1,21 @@
+{% if GA_MEASUREMENT_ID %}
+<div id="cc-bar" class="position-fixed bottom-0 start-0 end-0 bg-dark text-white p-3 d-flex flex-wrap gap-2 align-items-center justify-content-center small" style="z-index:1080" hidden>
+    <span>Używamy Google Analytics, żeby wiedzieć, jak korzystasz z FoodCost. <a class="link-light" href="https://sudomie.pl/polityka-prywatnosci.html">Polityka prywatności</a></span>
+    <button type="button" class="btn btn-sm btn-light" data-cc="accepted">Akceptuję</button>
+    <button type="button" class="btn btn-sm btn-outline-light" data-cc="declined">Odrzucam</button>
+</div>
+<script>
+(function () {
+  var bar = document.getElementById('cc-bar'), choice = null;
+  try { choice = localStorage.getItem('cc'); } catch (e) {}
+  bar.hidden = choice === 'accepted' || choice === 'declined';
+  bar.addEventListener('click', function (e) {
+    var value = e.target.getAttribute('data-cc');
+    if (!value) return;
+    try { localStorage.setItem('cc', value); } catch (err) {}
+    if (value === 'accepted') gtag('consent', 'update', {analytics_storage: 'granted'});
+    bar.hidden = true;
+  });
+})();
+</script>
+{% endif %}

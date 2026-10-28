@@ -56,6 +56,13 @@
 </div>
 {% endif %}
 
+{% if not recipe.is_cost_complete %}
+<div class="alert alert-warning">
+    Koszt jest niepełny: przepis bez składników albo składnik bez ceny (lub ceny w niepasującej jednostce).
+    Brakujące pozycje liczą się jako 0 zł, a food cost nie jest liczony.
+</div>
+{% endif %}
+
 {% if recipe.manual_cost_override is not None %}
 <div class="alert alert-info">
     Koszt wpisany ręcznie ({{ recipe.manual_cost_override }} PLN / porcję) — składniki poniżej,

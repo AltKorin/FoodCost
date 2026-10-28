@@ -1,60 +1,100 @@
 {% extends 'base.html' %}
-{% block title %}Wgraj fakturę lub zdjęcie{% endblock %}
-
+{% block title %}Odczytywanie faktur{% endblock %}
 {% block content %}
 <div class="mb-4">
-    <h4><i class="bi bi-file-earmark-image"></i> Wgraj fakturę lub zdjęcie cennika</h4>
-    <p class="text-muted">System odczyta pozycje z faktury i zaproponuje aktualizację cen.</p>
+    <h1 class="h3">Odczytaj fakturę ze zdjęcia lub PDF</h1>
+    <p class="text-muted">Wgraj dokument, sprawdź odczytane produkty i zapisz ceny dostawcy.</p>
 </div>
-
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label fw-medium">Dostawca</label>
-                        <select name="supplier_id" class="form-select">
-                            <option value="">— wykryj automatycznie z faktury —</option>
-                            {% for s in suppliers %}
-                            <option value="{{ s.pk }}">{{ s.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Zostaw puste — AI odczyta nazwę dostawcy z faktury i dopasuje albo zaproponuje nowego.</div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-medium">Plik faktury lub zdjęcie *</label>
-                        <input type="file" name="invoice_file" class="form-control"
-                               accept=".pdf,.jpg,.jpeg,.png,.webp" capture="environment" required>
-                        <div class="form-text">
-                            Obsługiwane formaty: PDF, JPG, PNG, WEBP. Maks. 20MB.<br>
-                            Na telefonie możesz zrobić zdjęcie aparatem bezpośrednio.
-                        </div>
-                    </div>
-
-                    <div class="alert alert-info py-2 small">
-                        <i class="bi bi-info-circle"></i>
-                        AI odczyta pozycje z faktury lub cennika. W następnym kroku sprawdzisz i poprawisz dopasowania przed zapisem.
-                        Przetwarzanie może potrwać 10–30 sekund.
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100" id="submitBtn">
-                        <i class="bi bi-cloud-upload"></i> Wgraj i analizuj
-                    </button>
-                </form>
-            </div>
-        </div>
+<section class="card mb-4" aria-label="Dostęp do odczytywania faktur">
+    <div class="card-body">
+    {% if ocr_org.plan == 'pro' %}
+        <h2 class="h5">OCR jest aktywny w Twoim lokalu</h2>
+        <p class="mb-0 text-muted">Masz dostęp w planie Pro. Limit okresu próbnego Cię nie dotyczy.</p>
+    {% elif not ocr_org.ocr_trial_started_at %}
+        <h2 class="h5">30 dni na wypróbowanie. Do 30 stron gratis.</h2>
+        <p class="mb-1">Próba zacznie się od pierwszego udanego odczytu. Bez karty i automatycznych opłat.</p>
+        <p class="mb-0 text-muted small">Limit jest wspólny dla całego lokalu. Zdjęcie to 1 strona, PDF zużywa tyle stron, ile ma dokument.</p>
+    {% elif ocr_org.ocr_available %}
+        <h2 class="h5">Pozostało {{ ocr_org.ocr_trial_days_left }} dni i {{ ocr_org.ocr_trial_pages_left }} stron</h2>
+        <p class="mb-0 text-muted">Próba kończy się {{ ocr_org.ocr_trial_ends_at|date:"d.m.Y H:i" }} lub po odczytaniu 30 stron. Limit jest wspólny dla lokalu.</p>
+    {% else %}
+        <h2 class="h5">{% if not ocr_org.ocr_trial_days_left %}Okres próbny OCR zakończył się{% else %}Wykorzystaliście 30 bezpłatnych stron{% endif %}</h2>
+        <p>Twoje dane zostają. Nadal możesz bezpłatnie dodawać składniki, przepisy i ceny ręcznie.</p>
+        <p class="small text-muted">Płatne pakiety nie są jeszcze dostępne. Możesz zgłosić zainteresowanie dalszym dostępem. Zgłoszenie nie jest zamówieniem i nie wiąże się z opłatą.</p>
+        {% if ocr_org.ocr_access_requested_at %}
+            <p class="mb-0 fw-semibold">Zainteresowanie dalszym dostępem zostało zgłoszone.</p>
+        {% else %}
+            <form method="post" action="{% url 'ingredients:invoice-request-access' %}">
+                {% csrf_token %}<button class="btn btn-primary" type="submit">Chcę dalej korzystać z OCR</button>
+            </form>
+        {% endif %}
+    {% endif %}
+    {% if ocr_reserved %}<p class="small mt-2 mb-0">W trakcie odczytu: {{ ocr_reserved }} str. Są tymczasowo zarezerwowane z limitu.</p>{% endif %}
     </div>
-</div>
+</section>
+{% if ocr_org.ocr_available %}
+<div class="row"><div class="col-lg-8"><div class="card"><div class="card-body">
+    <form id="invoice-upload-form" method="post" enctype="multipart/form-data" data-estimate-url="{% url 'ingredients:invoice-estimate' %}">
+        {% csrf_token %}
+        <input type="hidden" name="request_id" value="{{ request_id }}">
+        <div class="mb-3">
+            <label class="form-label" for="invoice-supplier">Dostawca</label>
+            <select id="invoice-supplier" name="supplier_id" class="form-select">
+                <option value="">Wykryj z faktury</option>
+                {% for s in suppliers %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+            </select>
+            <div class="form-text">Możesz zostawić puste. Dopasowanie sprawdzisz przed zapisem.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="invoice-file">Faktura lub zdjęcie</label>
+            <input id="invoice-file" type="file" name="invoice_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp" required aria-describedby="file-help invoice-estimate">
+            <div class="form-text" id="file-help">PDF, JPG, PNG lub WEBP. Maksymalnie 10 MB i 10 stron w jednym pliku.</div>
+        </div>
+        <p id="invoice-estimate" class="small" role="status" aria-live="polite">Wybierz plik, aby sprawdzić liczbę stron. Samo sprawdzenie nie uruchamia próby i nie zużywa limitu.</p>
+        <p class="small text-muted">Nieudany odczyt nie zużywa stron. Poprawianie wyniku i zapis cen są bezpłatne. Odczyt może potrwać kilkadziesiąt sekund.</p>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Odczytaj fakturę</button>
+    </form>
+</div></div></div></div>
+{% endif %}
 {% endblock %}
-
 {% block extra_scripts %}
 <script>
-document.querySelector('form').addEventListener('submit', function() {
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analizuję...';
-});
+(() => {
+    const form = document.getElementById('invoice-upload-form');
+    if (!form) return;
+    const file = document.getElementById('invoice-file');
+    const status = document.getElementById('invoice-estimate');
+    const button = document.getElementById('submitBtn');
+    let controller;
+    let sequence = 0;
+    button.disabled = true;
+    file.addEventListener('change', async () => {
+        controller?.abort();
+        const current = ++sequence;
+        button.disabled = true;
+        if (!file.files.length) { status.textContent = 'Wybierz plik faktury.'; return; }
+        if (file.files[0].size > 10 * 1024 * 1024) { status.textContent = 'Plik jest za duży. Maksymalnie 10 MB.'; return; }
+        controller = new AbortController();
+        status.textContent = 'Sprawdzam liczbę stron…';
+        try {
+            const response = await fetch(form.dataset.estimateUrl, { method: 'POST', body: new FormData(form), signal: controller.signal });
+            const result = await response.json();
+            if (current !== sequence) return;
+            if (!response.ok) throw new Error(result.error || 'Nie udało się sprawdzić pliku.');
+            if (!result.allowed) {
+                status.textContent = `Dokument ma ${result.pages} str. Brak wystarczającego limitu lub okres próbny zakończył się. Odśwież stronę, aby sprawdzić dostęp.`;
+                return;
+            }
+            status.textContent = result.pro ? `Dokument ma ${result.pages} str. Odczyt w ramach Twojego dostępu.` : `Ten dokument wykorzysta ${result.pages} z dostępnych ${result.available} stron.`;
+            button.disabled = false;
+        } catch (error) {
+            if (error.name !== 'AbortError' && current === sequence) status.textContent = error.message || 'Nie udało się sprawdzić pliku. Wybierz go ponownie.';
+        }
+    });
+    form.addEventListener('submit', () => {
+        button.disabled = true;
+        button.textContent = 'Odczytuję fakturę…';
+    });
+})();
 </script>
 {% endblock %}

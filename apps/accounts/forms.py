@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 from django.utils.text import slugify
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from .models import User, Organization
 
 
@@ -14,8 +15,11 @@ class RegisterForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'twoj@email.pl'}),
     )
     accept_tos = forms.BooleanField(
-        label='Akceptuję regulamin i politykę prywatności (w tym agregację anonimowych danych cenowych)',
-        error_messages={'required': 'Musisz zaakceptować regulamin, aby korzystać z serwisu.'},
+        label=mark_safe(
+            'Akceptuję <a href="/regulamin/" target="_blank">regulamin FoodCost</a> i znam '
+            '<a href="https://sudomie.pl/polityka-prywatnosci.html#foodcost" target="_blank">politykę prywatności</a>'
+        ),
+        error_messages={'required': 'Zaakceptuj regulamin, żeby założyć konto.'},
     )
 
     class Meta:

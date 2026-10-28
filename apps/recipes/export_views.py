@@ -47,7 +47,7 @@ def menu_export_word(request, pk):
         row = table.add_row().cells
         row[0].text = item.recipe.name
         row[1].text = str(item.quantity)
-        row[2].text = f'{item.recipe.cost_per_portion} PLN' if item.recipe.has_cost_data else '—'
+        row[2].text = f'{item.recipe.cost_per_portion} PLN' if item.recipe.is_cost_complete else '—'
         row[3].text = f'{item.get_cost()} PLN'
 
     doc.add_paragraph()

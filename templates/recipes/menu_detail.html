@@ -15,8 +15,8 @@
 
 {% if not is_cost_complete %}
 <div class="alert alert-warning">
-    Nie wszystkie dania w tym menu mają jeszcze koszt (składniki albo ręczna cena) —
-    suma poniżej jest zaniżona, brakujące dania liczą się jako 0 zł.
+    Koszt tego menu jest niepełny: menu bez dań albo danie, w którym któryś składnik nie ma ceny
+    (lub ceny w pasującej jednostce). Suma poniżej jest zaniżona, a food cost nie jest liczony.
 </div>
 {% endif %}
 
@@ -62,7 +62,7 @@
                 <tr>
                     <td>
                         <a href="{% url 'recipes:recipe-detail' row.item.recipe.pk %}">{{ row.item.recipe.name }}</a>
-                        {% if not row.item.recipe.has_cost_data %}<span class="badge bg-secondary">brak kosztu</span>{% endif %}
+                        {% if not row.item.recipe.is_cost_complete %}<span class="badge bg-secondary">brak kosztu</span>{% endif %}
                     </td>
                     <td>{{ row.item.quantity }}</td>
                     <td>{{ row.cost }} PLN</td>
