@@ -1,6 +1,6 @@
 # HANDOFF — FoodCost SaaS
 
-## 2026-10-28: wyrównanie git ↔ produkcja + demo bez rejestracji (lokalnie, NIEWDROŻONE)
+## 2026-10-28: wyrównanie git ↔ produkcja + demo bez rejestracji — WDROŻONE 19:25 (`af539fd`)
 
 - **Git = produkcja**: commit `7a23a35` zawiera 32 pliki wdrażane wybiórczo od 8.09 (sha256 = `/opt/fc-sudomie-pl`).
   Porównanie: kopia produkcji (rsync tylko do odczytu) vs lokalnie vs git. Różnice po nim tylko celowe: commit `af539fd`.
@@ -9,13 +9,19 @@
   stopka sudomie (#474), `seed` bez hasła w kodzie (było `demo12345`; teraz `DEMO_PASSWORD`, na serwerze wymagane).
 - **OCR w demo wyłączony** (`ocr_available`, `ocr_access.reserve_read`) — każdy odczyt kosztuje w OpenAI.
 - Testy 54/54: `docker compose -p fc-local exec -T web python manage.py test`.
-- **Wdrożenie (czeka na zgodę)**: backup bazy → rsync całego drzewa (bez `.env`, `media`, `cloudflared`, `legacy-foodcost`,
+- **Wdrożone** (backup `kelnerzy:/root/fc-backup-demo-20261028-1752`: `db.dump` + `code.tgz`; `.env`: `OFFERS_ENABLED=False`, `DEMO_MAX=200`, `DEMO_HOURS=24`, `DEMO_PER_HOUR=60`, `DEMO_PASSWORD`). Przebieg: backup bazy → rsync całego drzewa (bez `.env`, `media`, `cloudflared`, `legacy-foodcost`,
   `docs`) → do `.env`: `DEMO_MAX=200`, `OFFERS_ENABLED=False`, `DEMO_PASSWORD` → `docker compose up -d --build web` →
   `migrate` (accounts.0003, offers.0001; sprawdzić najpierw `showmigrations`) → `collectstatic` → GA/Consent na `/`,
   `/register/`, `/regulamin/` (zasada wdrożeń) → smoke.
-- **Do sprawdzenia na produkcji**: czy istnieje konto `demo@fc.sudomie.pl` z hasłem `demo12345` ze starego `seed`.
+- **Konto `demo@fc.sudomie.pl` NA PRODUKCJI ISTNIEJE i działa z hasłem `demo12345`** (stary `seed`) — czeka na decyzję (#479).
+- **INCYDENT 28.10 18:00–19:17**: pierwszy `docker build` → ext4 LXC 120 `emergency_ro` (pula LVM-thin hosta `kawaleryjska`
+  przepełniona; 128 GB przydziałów na 58 GB puli) → fc i kelnerzy 502. Naprawa: `pct stop/fsck/start 120` (Konrad),
+  `docker builder prune -af` + usunięte 3 obrazy `before-*` (zostaje `before-trial30-20260921`), `pct fstrim 120` → pula 81%.
+  **Przed każdym buildem na 120 sprawdzić pulę hosta** (`lvs pve/data`) i czyścić build cache po wdrożeniu.
 
 ### Gotcha (28.10)
+- Wysyłka: `rsync -rltz` (bez `-a` — nie nadpisywać właściciela/uprawnień na serwerze), wykluczenia jak w HANDOFF, w tym
+  `docker-compose.override.yml` (lokalny port 8080 — na produkcji otworzyłby nginx).
 - Lokalnie uruchamiaj TYLKO `postgres web` (+ `nginx` z własnym portem) pod `-p fc-local` — samo `up` podniosłoby
   `cloudflared` z lokalnymi poświadczeniami tunelu produkcji.
 - Kod jest w obrazie: `makemigrations` w kontenerze zapisuje plik w kontenerze → `docker compose cp` na dysk.

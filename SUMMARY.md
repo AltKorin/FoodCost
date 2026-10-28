@@ -789,4 +789,8 @@ realna potrzeba pokazania narzędzia.
 - Pierwsze sprzątanie piaskownicy: `ProtectedError` (PROTECT na RecipeIngredient/MenuItem blokuje kaskadę) — usuwane najpierw.
 - Zapytanie tylko do odczytu o migracje i konto demo na serwerze zablokował tryb uprawnień — czeka na zgodę usera.
 ### Następne kroki
-- Wdrożenie wg HANDOFF (2026-10-28) po zgodzie; sprawdzenie konta `demo@fc.sudomie.pl` na produkcji.
+- Wdrożone 19:25 po awarii hosta: `/`, `/register/`, `/regulamin/` 200 z GA4 i Consent Mode, demo i stopka na żywo,
+  `/offers/` 404 (flaga), kelnerzy 200, przeklikanie demo na produkcji 390/1280 px bez błędów JS.
+- Awaria: build dobił przepełnioną pulę LVM-thin hosta `kawaleryjska` → ext4 tylko do odczytu → fc i kelnerzy 502 przez ~77 min.
+  Naprawa przez Konrada na hoście (fsck, fstrim), sprzątanie build cache. Przyczyna u źródła (overcommit) — zadanie infrastruktury.
+- Konto `demo@fc.sudomie.pl` z hasłem `demo12345` istnieje na produkcji — czeka na decyzję (#479).
