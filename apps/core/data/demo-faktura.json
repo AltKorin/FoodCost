@@ -1,0 +1,74 @@
+{
+  "_opis": "Przykładowa faktura dla demo (apps.core.demo.sample_invoice): gotowy wynik odczytu w formacie OCR (ocr_service.normalize_items), bez wywołania OpenAI. Nazwy dobrane pod prawdziwe dopasowanie: 5 pozycji trafia w składniki kupowane w Makro (podwyżki — liczy się najtańsza aktualna cena, więc tylko ten sam dostawca zmienia koszt), Koperek uzupełnia brakującą cenę, Pieprz nie pasuje do niczego (nowy składnik). invoice_date = dzisiejsza data.",
+  "supplier_name": "Makro Cash&Carry Polska S.A.",
+  "invoice_number": "FV/2026/10/4817",
+  "warnings": [],
+  "items": [
+    {
+      "name": "Dorsz filet mrożony",
+      "unit": "kg",
+      "price": "52.90",
+      "price_type": "za_jednostke",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 8
+    },
+    {
+      "name": "Olej rzepakowy",
+      "unit": "l",
+      "price": "46.50",
+      "price_type": "za_opakowanie",
+      "quantity": "5",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 3
+    },
+    {
+      "name": "Jaja ściółkowe L",
+      "unit": "szt",
+      "price": "27.60",
+      "price_type": "za_opakowanie",
+      "quantity": "30",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 4
+    },
+    {
+      "name": "Mąka pszenna typ 450",
+      "unit": "kg",
+      "price": "64.00",
+      "price_type": "za_opakowanie",
+      "quantity": "25",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 2
+    },
+    {
+      "name": "Cukier biały",
+      "unit": "kg",
+      "price": "4.40",
+      "price_type": "za_jednostke",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 10
+    },
+    {
+      "name": "Koperek pęczek",
+      "unit": "szt",
+      "price": "2.20",
+      "price_type": "za_jednostke",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 20
+    },
+    {
+      "name": "Pieprz czarny mielony",
+      "unit": "kg",
+      "price": "48.00",
+      "price_type": "za_jednostke",
+      "is_netto": true,
+      "vat": "5%",
+      "purchased_quantity": 1
+    }
+  ]
+}

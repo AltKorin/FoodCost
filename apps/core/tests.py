@@ -119,3 +119,50 @@ class SeedTests(TestCase):
         self.assertFalse(user.check_password('demo12345'))
         self.assertTrue(user.check_password('a-long-local-demo-password'))
         self.assertEqual(Organization.objects.filter(slug='demo').count(), 1)
+
+
+@override_settings(DEMO_MAX=3, DEMO_HOURS=24, DEMO_PER_HOUR=10)
+class SampleInvoiceTests(TestCase):
+    """„Odczytaj przykładową fakturę”: the real matching and confirm step, without OCR — and only in a demo."""
+
+    def setUp(self):
+        self.client = Client()
+        self.client.post('/demo/')
+        self.org = User.objects.get(pk=self.client.session['_auth_user_id']).organization
+
+    def test_sample_goes_through_matching_without_openai_and_completes_the_package(self):
+        with mock.patch('apps.ingredients.ocr_service._call_openai_vision') as openai:
+            self.assertContains(self.client.get('/ingredients/invoice/upload/'), 'Odczytaj przykładową fakturę')
+            self.assertRedirects(self.client.post('/ingredients/invoice/sample/'), '/ingredients/invoice/confirm/', fetch_redirect_response=False)
+            openai.assert_not_called()
+        items = self.client.session['invoice_items']
+        matched = {i['name']: i['matched_ingredient_name'] for i in items}
+        self.assertEqual(matched['Dorsz filet mrożony'], 'Dorsz — filet')
+        self.assertEqual(matched['Koperek pęczek'], 'Koperek')
+        self.assertIsNone(matched['Pieprz czarny mielony'])  # the „utwórz nowy składnik” case
+        self.assertIsNotNone(self.client.session['invoice_supplier_id'])
+        page = self.client.get('/ingredients/invoice/confirm/')
+        self.assertContains(page, 'Przykładowa faktura')
+        form = {'supplier_choice': str(self.client.session['invoice_supplier_id'])}
+        for n, item in enumerate(items):
+            form.update({f'save_{n}': 'on', f'price_{n}': item['price'], f'unit_{n}': item['unit'],
+                         f'package_size_{n}': item['package_size'] or '', f'is_netto_{n}': '1',
+                         f'ingredient_id_{n}': str(item['matched_ingredient_id'] or '__new__')})
+        premium = Menu.objects.get(organization=self.org, name='Obiad weselny — premium')
+        before = premium.total_cost_per_person
+        self.client.post('/ingredients/invoice/confirm/', form)
+        self.assertGreater(Menu.objects.get(pk=premium.pk).total_cost_per_person, before)  # the package cost rose
+        cod = Ingredient.objects.get(organization=self.org, name='Dorsz — filet')
+        self.assertEqual(str(cod.get_current_prices().first().price), '52.90')  # same supplier: the rise replaces the price
+        self.assertTrue(Ingredient.objects.filter(organization=self.org, name='Pieprz czarny mielony').exists())
+        self.assertTrue(Menu.objects.get(organization=self.org, name='Obiad komunijny').is_cost_complete)  # koperek now has a price
+
+    def test_a_real_restaurant_gets_no_sample(self):
+        org = Organization.objects.create(name='Prawdziwa', slug='prawdziwa')
+        user = User.objects.create_user(username='szef@example.test', email='szef@example.test', password='x-long-password-1',
+                                        organization=org, role=User.ROLE_OWNER)
+        client = Client()
+        client.force_login(user)
+        self.assertEqual(client.post('/ingredients/invoice/sample/').status_code, 404)
+        self.assertNotContains(client.get('/ingredients/invoice/upload/'), 'Odczytaj przykładową fakturę')
+        self.assertEqual(Client().post('/ingredients/invoice/sample/').status_code, 302)  # anonymous → login

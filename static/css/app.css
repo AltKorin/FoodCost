@@ -239,3 +239,5 @@ a:hover { color: var(--fc-primary-dark); }
   background: #fbefe3; border: 1px solid var(--fc-warning);
 }
 .fc-demo-bar p { margin: 0; max-width: 72ch; }
+.fc-invoice-paper { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); }

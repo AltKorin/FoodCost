@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
@@ -44,6 +44,48 @@ def _match_supplier(name, suppliers_qs):
     return best
 
 
+def _remember_read(request, org, raw_data, supplier=None, sample=False):
+    """An OCR result (or the demo's sample) → matched to this kitchen's ingredients → the confirm step in the session."""
+    items = normalize_items(raw_data.get('items', []))
+    if not items:
+        raise ValueError('Nie znaleziono pozycji w fakturze. Sprawdź czytelność pliku. Nie odjęliśmy stron z limitu.')
+    items = fuzzy_match_ingredients(items, Ingredient.objects.filter(organization=org, is_active=True))
+    supplier_name = raw_data.get('supplier_name')
+    if not supplier:
+        supplier = _match_supplier(supplier_name, Supplier.objects.filter(organization=org))
+    request.session['invoice_items'] = [
+        {
+            'name': i['name'], 'price': str(i['price']),
+            'price_per_unit': str(i['price_per_unit']), 'unit': i['unit'],
+            'package_size': str(i['package_size']) if i['package_size'] else None,
+            'vat': i['vat'], 'is_netto': i['is_netto'],
+            'purchased_quantity': i.get('purchased_quantity'),
+            'matched_ingredient_id': i['matched_ingredient'].pk if i['matched_ingredient'] else None,
+            'matched_ingredient_name': i['matched_ingredient'].name if i['matched_ingredient'] else None,
+            'match_score': round(i['match_score'], 2),
+        } for i in items
+    ]
+    request.session['invoice_supplier_id'] = supplier.pk if supplier else None
+    request.session['invoice_meta'] = {
+        'supplier_name': supplier_name, 'invoice_number': raw_data.get('invoice_number'),
+        'invoice_date': raw_data.get('invoice_date'), 'warnings': raw_data.get('warnings', []), 'sample': sample,
+    }
+
+
+@login_required
+@setup_required
+@require_POST
+def invoice_sample(request):
+    """Demo only: the sample invoice goes through the real matching and confirm step, without OCR (no OpenAI cost)."""
+    from apps.core.demo import sample_invoice
+
+    org = request.user.organization
+    if not org.is_demo:
+        raise Http404
+    _remember_read(request, org, sample_invoice(), sample=True)
+    return redirect('ingredients:invoice-confirm')
+
+
 def _upload_context(org):
     org.refresh_from_db()
     return {
@@ -51,7 +93,15 @@ def _upload_context(org):
         'ocr_org': org,
         'ocr_reserved': pending_pages(org),
         'request_id': str(uuid.uuid4()),
+        'sample_invoice': _sample_preview() if org.is_demo else None,
     }
+
+
+def _sample_preview():
+    from apps.core.demo import sample_invoice
+
+    raw = sample_invoice()
+    return {**raw, 'items': normalize_items(raw['items'])}
 
 
 @login_required
@@ -103,33 +153,7 @@ def invoice_upload(request):
                 raw_data = extract_invoice_data(file_bytes)
             else:
                 raw_data = extract_invoice_data_from_image(file_bytes, SUPPORTED_IMAGE_EXTENSIONS[file_ext])
-            items = normalize_items(raw_data.get('items', []))
-            if not items:
-                raise ValueError('Nie znaleziono pozycji w fakturze. Sprawdź czytelność pliku. Nie odjęliśmy stron z limitu.')
-            items = fuzzy_match_ingredients(items, Ingredient.objects.filter(organization=org, is_active=True))
-            supplier_name = raw_data.get('supplier_name')
-            if supplier_id:
-                resolved_supplier_id = supplier.pk
-            else:
-                matched = _match_supplier(supplier_name, Supplier.objects.filter(organization=org))
-                resolved_supplier_id = matched.pk if matched else None
-            request.session['invoice_items'] = [
-                {
-                    'name': i['name'], 'price': str(i['price']),
-                    'price_per_unit': str(i['price_per_unit']), 'unit': i['unit'],
-                    'package_size': str(i['package_size']) if i['package_size'] else None,
-                    'vat': i['vat'], 'is_netto': i['is_netto'],
-                    'purchased_quantity': i.get('purchased_quantity'),
-                    'matched_ingredient_id': i['matched_ingredient'].pk if i['matched_ingredient'] else None,
-                    'matched_ingredient_name': i['matched_ingredient'].name if i['matched_ingredient'] else None,
-                    'match_score': round(i['match_score'], 2),
-                } for i in items
-            ]
-            request.session['invoice_supplier_id'] = resolved_supplier_id
-            request.session['invoice_meta'] = {
-                'supplier_name': supplier_name, 'invoice_number': raw_data.get('invoice_number'),
-                'invoice_date': raw_data.get('invoice_date'), 'warnings': raw_data.get('warnings', []),
-            }
+            _remember_read(request, org, raw_data, supplier if supplier_id else None)
             finish_read(read, success=True)
             completed = True
             return redirect('ingredients:invoice-confirm')

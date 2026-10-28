@@ -45,6 +45,11 @@ class Organization(models.Model):
         return max(0, self.OCR_TRIAL_PAGES - self.ocr_trial_pages_used)
 
     @property
+    def is_demo(self):
+        """A visitor's sandbox or the presentation account (manage.py seed): the sample invoice is offered."""
+        return bool(self.demo_until) or self.slug == 'demo'
+
+    @property
     def ocr_available(self):
         if self.demo_until:  # every read costs money at OpenAI; the demo shows the rest of the app
             return False

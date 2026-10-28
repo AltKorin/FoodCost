@@ -1,12 +1,36 @@
 {% extends 'base.html' %}
 {% block title %}Odczytywanie faktur{% endblock %}
 {% block content %}
-{% if DEMO_UNTIL %}<div class="alert alert-info">W demo odczyt faktur jest wyłączony — każdy odczyt kosztuje. Na własnym koncie masz 30 dni próby, do 30 stron na lokal. Ceny w demo zmienisz ręcznie w „Składnikach”.</div>{% endif %}
+{% if DEMO_UNTIL %}<div class="alert alert-info">W demo wgrywanie własnych faktur jest wyłączone — każdy odczyt kosztuje. Wypróbuj na przykładowej fakturze poniżej; na własnym koncie masz 30 dni próby, do 30 stron na lokal.</div>{% endif %}
 <div class="mb-4">
     <h1 class="h3">Odczytaj fakturę ze zdjęcia lub PDF</h1>
     <p class="text-muted">Wgraj dokument, sprawdź odczytane produkty i zapisz ceny dostawcy.</p>
 </div>
-<section class="card mb-4" aria-label="Dostęp do odczytywania faktur">
+{% if sample_invoice %}
+<section class="card mb-4 fc-sample-invoice" aria-labelledby="sample-title">
+    <div class="card-body">
+        <h2 class="h5" id="sample-title">Przykładowa faktura</h2>
+        <p class="text-muted">Tak wygląda faktura z hurtowni. Odczytaj ją — zobaczysz dopasowanie do Twoich składników, nowy składnik i podwyżki, a po zatwierdzeniu nowe koszty pakietów.</p>
+        <div class="fc-invoice-paper">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                <strong>{{ sample_invoice.supplier_name }}</strong>
+                <span>Faktura {{ sample_invoice.invoice_number }} · {{ sample_invoice.invoice_date }}</span>
+            </div>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Towar</th><th class="text-end">Ilość</th><th class="text-end">Cena netto</th></tr></thead>
+                <tbody>{% for item in sample_invoice.items %}
+                    <tr><td>{{ item.name }}</td><td class="text-end">{{ item.purchased_quantity }}{% if item.package_size %} × {{ item.package_size|floatformat:"-2" }} {{ item.unit }}{% else %} {{ item.unit }}{% endif %}</td><td class="text-end">{{ item.price|floatformat:2 }} zł{% if item.package_size %} / opak.{% endif %}</td></tr>
+                {% endfor %}</tbody>
+            </table></div>
+        </div>
+        <form method="post" action="{% url 'ingredients:invoice-sample' %}" class="mt-3">{% csrf_token %}
+            <button type="submit" class="btn btn-primary"><i class="bi bi-camera" aria-hidden="true"></i> Odczytaj przykładową fakturę</button>
+            <span class="small text-muted ms-2">Bez wysyłania pliku i bez kosztów — wynik odczytu jest przygotowany.</span>
+        </form>
+    </div>
+</section>
+{% endif %}
+{% if not DEMO_UNTIL %}<section class="card mb-4" aria-label="Dostęp do odczytywania faktur">
     <div class="card-body">
     {% if ocr_org.plan == 'pro' %}
         <h2 class="h5">OCR jest aktywny w Twoim lokalu</h2>
@@ -32,7 +56,7 @@
     {% endif %}
     {% if ocr_reserved %}<p class="small mt-2 mb-0">W trakcie odczytu: {{ ocr_reserved }} str. Są tymczasowo zarezerwowane z limitu.</p>{% endif %}
     </div>
-</section>
+</section>{% endif %}
 {% if ocr_org.ocr_available %}
 <div class="row"><div class="col-lg-8"><div class="card"><div class="card-body">
     <form id="invoice-upload-form" method="post" enctype="multipart/form-data" data-estimate-url="{% url 'ingredients:invoice-estimate' %}">

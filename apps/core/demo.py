@@ -27,6 +27,13 @@ def data():
 NAME = data()['name']
 
 
+def sample_invoice():
+    """The demo invoice as OCR would return it (data/demo-faktura.json), dated today — no call to OpenAI."""
+    raw = json.loads((DATA.parent / 'demo-faktura.json').read_text(encoding='utf-8'))
+    raw['invoice_date'] = timezone.localdate().isoformat()
+    return raw
+
+
 def fill(org):
     """Suppliers, ingredients with a price history (the last price is current), recipes in contexts and packages
     per person — all from data/demo.json. An ingredient without prices stays without: the incomplete-cost warning."""

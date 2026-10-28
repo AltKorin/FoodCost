@@ -17,6 +17,7 @@
 {% block content %}
 <h1 class="h3 mb-3">Sprawdź odczytane ceny</h1>
 <p class="text-muted">Porównaj nazwy i ilości z fakturą. Cena dotyczy jednej jednostki lub jednego opakowania, nie całego zakupu.</p>
+{% if meta.sample %}<div class="alert alert-info">Przykładowa faktura — tak wygląda wynik odczytu. Sprawdź dopasowania (pieprz nie pasuje do niczego: utwórz nowy składnik), zapisz i zobacz nowe koszty w „Menu”.</div>{% endif %}
 {% for warning in meta.warnings %}<div class="alert alert-warning">{{ warning }}</div>{% endfor %}
 <form id="confirmForm" method="post">
     {% csrf_token %}

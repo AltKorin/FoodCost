@@ -6,6 +6,7 @@ app_name = 'ingredients'
 urlpatterns = [
     # Faktury (OCR: próba lub Pro)
     path('invoice/upload/', invoice_views.invoice_upload, name='invoice-upload'),
+    path('invoice/sample/', invoice_views.invoice_sample, name='invoice-sample'),
     path('invoice/estimate/', invoice_views.invoice_estimate, name='invoice-estimate'),
     path('invoice/request-access/', invoice_views.invoice_request_access, name='invoice-request-access'),
     path('invoice/confirm/', invoice_views.invoice_confirm, name='invoice-confirm'),
