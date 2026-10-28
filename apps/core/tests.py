@@ -10,6 +10,8 @@ from django.utils import timezone
 
 from apps.accounts import ocr_access
 from apps.accounts.models import Organization, User
+from apps.core import demo
+from apps.ingredients.models import Ingredient, SupplierPrice
 from apps.recipes.models import Menu, Recipe
 
 
@@ -26,13 +28,13 @@ class SandboxDemoTests(TestCase):
         a, org_a = self.visitor()
         b, org_b = self.visitor()
         self.assertNotEqual(org_a.pk, org_b.pk)
-        self.assertEqual(Recipe.objects.filter(organization=org_a).count(), 3)
-        menu = Menu.objects.get(organization=org_a)
-        self.assertEqual(menu.items.count(), 3)
+        data = demo.data()
+        self.assertEqual(Recipe.objects.filter(organization=org_a).count(), len(data['recipes']))
+        self.assertEqual(Menu.objects.filter(organization=org_a).count(), len(data['menus']))
         page = a.get('/')
         self.assertContains(page, 'Twoja własna restauracja przykładowa')
         self.assertContains(page, '/demo/koniec/')
-        other = Recipe.objects.filter(organization=org_b).first()
+        other = Recipe.objects.filter(organization=org_b).first()  # noqa: the other visitor's recipe
         self.assertEqual(a.get(f'/recipes/{other.pk}/').status_code, 404)  # the other visitor's data
 
     def test_no_password_and_no_invoice_ocr(self):
@@ -81,6 +83,33 @@ class SeedTests(TestCase):
         with mock.patch.dict('os.environ', {'DEMO_PASSWORD': ''}), self.assertRaises(CommandError):
             call_command('seed')
         self.assertFalse(Organization.objects.exists())
+
+    def test_data_shows_a_price_rise_and_an_incomplete_package(self):
+        org = demo.fill(Organization.objects.create(name='X', slug='x'))
+        schab = Ingredient.objects.get(organization=org, name='Schab wieprzowy')
+        history = list(SupplierPrice.objects.filter(ingredient=schab).order_by('valid_from'))
+        self.assertEqual([str(p.price) for p in history], ['19.90', '21.20', '22.50'])
+        self.assertEqual([p.is_current for p in history], [False, False, True])
+        self.assertGreater((timezone.now() - history[0].valid_from).days, 100)
+        menus = {m.name: m for m in Menu.objects.filter(organization=org)}
+        self.assertTrue(menus['Obiad weselny — podstawowy'].is_cost_complete)
+        self.assertFalse(menus['Obiad komunijny'].is_cost_complete)  # koperek has no price: the warning to show
+        basic, premium = menus['Obiad weselny — podstawowy'], menus['Obiad weselny — premium']
+        self.assertLess(abs(basic.food_cost_pct - basic.target_fc_pct), 3)  # a believable result on target
+        self.assertGreater(premium.food_cost_pct, premium.target_fc_pct)  # and one above it, to show the alert
+
+    def test_reset_gives_a_clean_presentation_and_spares_sandboxes(self):
+        with mock.patch.dict('os.environ', {'DEMO_PASSWORD': 'a-long-local-demo-password'}):
+            call_command('seed', stdout=open('/dev/null', 'w'))
+            org = Organization.objects.get(slug='demo')
+            Ingredient.objects.filter(organization=org, name='Sól').update(name='Zmienione na pokazie')
+            sandbox = demo.fill(Organization.objects.create(name='Gość', slug='demo-abc', demo_until=timezone.now() + timedelta(hours=1)))
+            call_command('seed', '--reset', stdout=open('/dev/null', 'w'))
+        fresh = Organization.objects.get(slug='demo')
+        self.assertTrue(Ingredient.objects.filter(organization=fresh, name='Sól').exists())
+        self.assertFalse(Ingredient.objects.filter(name='Zmienione na pokazie').exists())
+        self.assertTrue(Organization.objects.filter(pk=sandbox.pk).exists())
+        self.assertTrue(User.objects.get(email='demo@fc.sudomie.pl').check_password('a-long-local-demo-password'))
 
     def test_seed_is_idempotent_and_has_no_password_in_code(self):
         with mock.patch.dict('os.environ', {'DEMO_PASSWORD': 'a-long-local-demo-password'}):
