@@ -516,3 +516,277 @@ realna potrzeba pokazania narzędzia.
 - `templates/base.html`: Bootstrap 5 + sidebar
 - Seed z przykładowymi danymi (10 składników, 3 dostawców, 3 przepisy)
 - Deploy na ThinkCenter i weryfikacja
+
+## Sesja 2026-09-21
+### Zrobiono
+- Odświeżono landing z kalkulatorem i wspólne style aplikacji: jasna
+  nawigacja, spokojniejsza hierarchia, bardziej czytelne formularze i tabele.
+- Dodano widoczne logowanie na landing, czytelniejszy opis wyniku,
+  walidację ceny i polski format PLN. FAQ korzysta z natywnego details.
+- Naprawiono obsługę mobilnego menu: Bootstrap offcanvas, Escape,
+  zamknięcie przyciskiem, zarządzanie fokusem. Dodano etykiety dla
+  wyszukiwarek i ikon akcji na listach składników i przepisów.
+### Zadziałało
+- Lokalne testy przeglądarkowe na danych demo i Django check.
+- Inspiracja lokalnymi podglądami Infinite Beauty; sama rozmowa niedostępna.
+### Nie zadziałało
+- Istniejące migracje nie odtwarzają aktualnych modeli; do testów użyto
+  osobnej bazy SQLite z syncdb i ustawień w /tmp, bez zmian produkcyjnych.
+- Sandbox blokował pobieranie zależności, serwer i Chromium; wykonano
+  te operacje po zatwierdzeniu wymaganych uprawnień.
+### Następne kroki
+- Ocena lokalnego podglądu; wdrożenie na produkcję pozostaje osobnym krokiem.
+
+### Wdrożenie wyglądu (2026-09-21)
+- Na zlecenie użytkownika wdrożono sześć plików UI na kelnerzy; backup
+  szablonów/CSS i tag starego obrazu zachowane przed zmianą.
+- Przebudowano web, sprawdzono Django oraz publiczną stronę w Chromium:
+  nowy wygląd, kalkulator, responsywność i ekran logowania działają.
+- Następny temat: wybór nowszego modelu OCR zamiast gpt-4o; zidentyfikowano
+  także limit odpowiedzi 2000 tokenów i problemy przeliczania/potwierdzania cen.
+
+## Sesja 2026-09-21: tani OCR dla zdjęć i PDF
+### Zrobiono
+- Po wyborze użytkownika wdrożono GPT-4.1 mini, zamiast gpt-4o.
+- Doprecyzowano nazwy, ilość zakupioną vs wielkość opakowania, ceny
+  jednostkowe i netto/brutto; odpowiedź wymuszona schematem JSON.
+- Naprawiono podwójne dzielenie ceny opakowania oraz zdublowane pola
+  mobilne/desktop, które nadpisywały korekty na ekranie potwierdzenia.
+### Zadziałało
+- 9 testów regresyjnych i sprawdzenie formularza w Chromium 390/1440 px.
+- Rzeczywiste API gpt-4.1-mini poprawnie odczytało syntetyczny PDF i PNG.
+- Wdrożenie na kelnerzy z backupem, Django check i aktywny model potwierdzone.
+### Nie zadziałało / ograniczenia
+- Brak rzeczywistych problematycznych faktur do porównania dokładności.
+### Następne kroki
+- Sprawdzić ponowny odczyt faktur klienta z błędnymi nazwami i ilościami.
+
+## Sesja 2026-09-21: udostępnienie bezpłatnej próby OCR
+### Zrobiono
+- Wdrożono 30 dni od pierwszego udanego OCR i 100 stron na lokal,
+  licznik dni/stron, sprawdzanie pliku przed odczytem, obsługę wyczerpania.
+- Rezerwacje pod blokadą wiersza, zwrot stron po błędzie, ochrona przed
+  podwójnym wysłaniem i odzyskiwanie rezerwacji po awarii procesu.
+- Dostęp Free do OCR, zachowanie Pro, zapis już odczytanych wyników po
+  zakończeniu próby i niezmienione darmowe ręczne funkcje.
+- Oferta próby na landing/rejestracji/dashboardzie, Open Graph dla Facebooka.
+- Po informacji o braku konta spółki: odłożono płatności, dodano zgłoszenie
+  zainteresowania dalszym OCR do panelu admina (bez zamówienia/opłat).
+### Zadziałało
+- 26 testów na osobnej bazie PostgreSQL, także rzeczywisty test współbieżności.
+- Chromium: nowa rejestracja, konfiguracja lokalu, PDF preview, zwrot po
+  błędzie, widoki telefonu/desktop. Sprawdzenie Free/Pro na produkcji.
+- Backup bazy i kodu przed migracją oraz zachowany poprzedni obraz.
+### Nie zadziałało
+- Sudo wymaga hasła; zapis migracji umożliwiono przez zachowanie starych
+  katalogów obok nowych kopii. Brakującą recipes.0002 pobrano z produkcji.
+### Następne kroki
+- Użytkownik może udostępnić fc.sudomie.pl; nie publikowano ani nie wysyłano
+  niczego w jego imieniu. Obserwować zgłoszenia dalszego dostępu w adminie.
+- Podłączyć sprzedaż pakietów po decyzji o obsłudze płatności spółki.
+
+## Sesja 2026-09-21: zmniejszenie limitu OCR
+### Zrobiono
+- Limit próby zmieniony ze 100 na 30 stron łącznie przez 30 dni.
+- Użytkownik potwierdził brak dziennego ograniczenia. Liczniki i początek
+  istniejących prób zachowane, Pro bez zmian.
+- Komunikaty i metadane udostępniania ujednolicone z nowym limitem.
+### Zadziałało
+- 26 testów na PostgreSQL, wdrożenie web i weryfikacja ustawień 30/30.
+### Nie zadziałało
+- Brak nowych problemów.
+### Następne kroki
+- Obserwować wykorzystanie okresów próbnych po udostępnieniu strony.
+
+## Sesja 2026-10-04
+### Zrobiono
+- GA4 (`G-6DYFBNNH6X`) na fc.sudomie.pl za flagą `GA_MEASUREMENT_ID`, Consent Mode v2 + baner zgody; wdrożone na `kelnerzy`, tag zweryfikowany curl-em na `/`.
+### Zadziałało
+- Consent Mode default-denied zamiast blokowania tagu do zgody — ruch z UE liczony (modelowany) od pierwszego dnia.
+### Nie zadziałało
+- Cloudflare Web Analytics: ustawione „excluding EU” → zero danych z PL; user wybrał GA.
+- Cloudflare Traffic pokazuje wszystkie requesty (boty, skanery), nie ludzi.
+- foodcost.sudomie.pl → 301 na fc.sudomie.pl (Cloudflare Redirect Rule), zrzut MySQL do `legacy-foodcost/db-dump/`, integracja oferty→foodcost wyłączona.
+- Redirect Rule: wildcard `https://…/*` łapał tylko HTTPS, `http*://` Cloudflare parsował jako host „http”; zadziałało wyrażenie `http.host eq` + target `concat(...)` (goły string jako target odrzucany przez walidację).
+### Następne kroki
+- Linki w nowej porcji maili z `utm_campaign`; po wysyłce sprawdzić GA Realtime/Pozyskanie.
+- ~2026-11-04: usunąć aplikację foodcost z cPanel GoDaddy; monitor foodcost w uptime.sudomie.pl usunąć.
+
+
+## Sesja 2026-10-04: oferty jako moduł FoodCost
+### Zrobiono
+- Zidentyfikowano grupy.sudomie.pl w oferty.sudomie.pl/oferty_grupowe.
+- Użytkownik wybrał moduł ofert we wspólnym fc.sudomie.pl.
+- Przygotowano apps.offers, migrację, formularze, listę/szczegóły,
+  wydruk dla klienta, sidebar i wejście z dashboardu.
+- Snapshot menu i kosztu, ceny negocjowane, pozycje noclegów/usług,
+  wewnętrzny food cost, izolacja organizacji i ochrona edycji revision.
+### Zadziałało
+- 8 testów Django 5.2.14 na SQLite, check i kontrola migracji.
+### Nie zadziałało / ograniczenia
+- Instalacja osobnego środowiska z pip niedostępna przez DNS sandboxa;
+  testy wykonano istniejącym Django 5.2 z zależnościami istniejącego venv.
+- Brak testu UI w przeglądarce i testu współbieżności na PostgreSQL.
+- Nowy moduł działa lokalnie; nie wdrożono go ani nie migrowano danych grupy.
+### Następne kroki
+- Wdrożenie z backupem i weryfikacją wersji kodu na kelnerzy.
+
+
+## Sesja 2026-10-04: landing pakietu na osobę
+### Zrobiono
+- Nowy hero i kalkulator pakietu z dwiema zakładkami, 3 kroki, CTA, FAQ i meta.
+- Wejście gastro_2026_10 otwiera poprzedni kalkulator dania i pasujący komunikat.
+- CSS v20261004 i naprawa ukrywania banera zgody bez zmiany logiki/treści.
+- Zrzuty 375/1280, raport i osobny zestaw do wdrożenia bez niewdrożonych Ofert.
+### Zadziałało
+- Node: wzory, przypadki negatywne i 24 kombinacje regresji dania.
+- Django 5.2.17: render i linki/GA/KRS/meta; Chromium: oba kalkulatory,
+  320/375/768/1280, błędy, klawiatura, focus, aria-live, noscript i brak requestów.
+- Lighthouse lokalny: 97/100/96/100 (performance/accessibility/best practices/SEO).
+### Nie zadziałało
+- Sandbox wymagał eskalacji dla SSH, pobrania zależności i lokalnej przeglądarki.
+- Chrome przez Claude-in-Chrome niedostępny; użyto Chromium przez Playwright.
+- Rzeczywiste ogłaszanie czytnikiem ekranu nieprzetestowane.
+- Content-gapy: brak realnych kwot strat, trendu cen, opinii i zgody na nazwę hotelu;
+  użyto wyłącznie oznaczonego scenariusza. Brak danych lejka pierwszej kampanii.
+### Następne kroki
+- Akceptacja zrzutów, backup i wdrożenie wyłącznie plików z docs/landing-2026-10-04/deploy.
+- Weryfikacja produkcji i ustawienie polecenia na done po deployu.
+- Sprawdzić wejścia z maili, rejestracje i dodanie pierwszego pakietu/faktury.
+
+## Sesja 2026-10-04: audyt pakietów (backend)
+### Zrobiono
+- Audyt kodu i testy 48 przypadków (SQLite + izolowany PostgreSQL 16) wg `prompty/polecenia/backend-audyt-pakietow.md`; raport `docs/audyt-pakietow-2026-10-04.md`.
+- Porównanie sha256 z produkcją (`kelnerzy`): modele/widoki cen i faktur identyczne, `apps/offers` i nowy landing tylko lokalnie.
+### Zadziałało
+- Scenariusz referencyjny (4→5 zł, 6→7,50 zł/os., FC 10→12,5%, +120 zł) liczy się poprawnie; izolacja organizacji bez wycieku.
+- Testy z `expectedFailure` dokumentują oczekiwanie biznesowe bez czerwonej gałęzi; testy leżą w `docs/`, nie w `apps/`.
+### Nie zadziałało
+- Pierwsze wersje 3 testów miały złe asercje (locale `0,0%`, UI już komunikuje koszt ręczny, kolizja nazwy składnika) — poprawione, kod aplikacji nietknięty.
+- `manage.py test apps` zgłasza 2 błędy z katalogów `.migrations-backup-20260921` (artefakt, nie testy).
+### Następne kroki
+- Wiszą: usterki U1–U11 (nienaprawiane — audyt), decyzje produktowe do kontroli marży imprezy, walidacja z klientem. Kolejność prac w raporcie, sekcja 8.
+
+## Sesja 2026-10-04: naprawa U1–U3 (przed wdrożeniem landingu)
+### Zrobiono
+- `Recipe.is_cost_complete` / `Menu.is_cost_complete` (niepuste menu, każdy składnik z ceną w przeliczalnej jednostce, ilość i yield > 0); FC% = brak przy niekompletnym koszcie; ostrzeżenia w widoku menu, przepisu i liście przepisów.
+- Ceny w jednostce niezgodnej ze składnikiem: ignorowane w `get_best_price`, odrzucane w formularzu ceny (`SupplierPrice.clean`) i pomijane przy zatwierdzaniu faktury. Oferty używają definicji z Menu.
+- 12 testów regresyjnych w `apps/recipes/tests.py`; testy audytu uzupełnione (usunięte 8 przestarzałych).
+### Zadziałało
+- Bez migracji (zmiany tylko w logice); wszystkie testy apps przechodzą (2 znane artefakty katalogów backupu).
+### Nie zadziałało
+- Nic. Nie wdrożono; nie sprawdzano produkcyjnych danych — po wdrożeniu część istniejących menu zmieni się na „niepełne” (zamierzone), a ceny w niezgodnej jednostce znikną z wyliczeń.
+### Następne kroki
+- Wiszą U4–U11 oraz wdrożenie razem z landingiem (przed deployem: zapytanie tylko-do-odczytu o ceny w niezgodnych jednostkach na produkcji).
+
+## Sesja 2026-10-04: wdrożenie U1–U3
+### Zrobiono
+- Backup, wysyłka 9 plików, przebudowa `web`, weryfikacja (strony 200, logi czyste, nowe własności działają na danych produkcyjnych).
+### Zadziałało
+- Wcześniejszy pre-check (0 niezgodnych jednostek, 0 duplikatów) — wdrożenie bez niespodzianek.
+### Nie zadziałało
+- `docker compose restart web` nie załadował kodu (jest w obrazie) — dopiero `up -d --build web`. Przez chwilę host miał nowe pliki, a kontener stary kod (bez wpływu na użytkowników).
+- Moje podsumowanie pre-checku „żadne menu się nie zmieni” było technicznie prawdziwe (liczyło tylko przejścia kompletne→niepełne), ale wszystkie 3 menu są niepełne — to dane niedokończone, nie skutek wdrożenia.
+### Następne kroki
+- Landing nadal czeka na akceptację zrzutów; U4–U11 niewdrożone/nienaprawione.
+
+## Sesja 2026-10-04: zamknięcie części backendowej
+### Zrobiono
+- Dokumentacja backendu domknięta (HANDOFF: stan końcowy, ograniczenia dla landingu, otwarte usterki); landing przekazany agentowi frontendowemu.
+- Na żądanie wykonano `docker compose restart web` (kod i tak już był w przebudowanym obrazie).
+### Zadziałało
+- Wdrożenie U1–U3 z backupem i weryfikacją na danych produkcyjnych; krok 3 landingu jest po nim zgodny z działaniem aplikacji.
+### Nie zadziałało
+- Nic nowego.
+### Następne kroki
+- Wiszą: U4–U11, decyzje produktowe do kontroli marży imprezy, walidacja z klientem, wdrożenie landingu (agent frontendowy). Szczegóły w raporcie audytu.
+
+
+
+## Sesja 2026-10-04: wdrożenie landingu i zasady trackingu
+### Zrobiono
+- Po akceptacji użytkownika wdrożono 3 pliki landingu, backup ze strukturą katalogów:
+  kelnerzy:/root/fc-backup-landing-20261004-1508/. Backend U1–U3 zachowany.
+- Zachowano GA4 i Consent Mode; dodano obowiązkową kontrolę kodów Google do
+  HANDOFF oraz docs/WDROZENIA.md (także zasada w HANDOFF sudomie.pl).
+### Zadziałało
+- Build web/collectstatic i Django check. HTTP 200 dla /, /register/, /regulamin/;
+  GA4 G-6DYFBNNH6X i zgody obecne we wszystkich trzech stronach.
+- Chromium na produkcji: kalkulatory, zmiana pól, zakładki klawiaturą,
+  375/1280 px, wejście z maila i zachowanie decyzji/consent update.
+### Nie zadziałało
+- Cloudflare odrzucił odczyt urllib (403); odczyt curl i Chromium działał.
+- Test przeglądarki blokował pingi GA, więc nie potwierdza odbioru zdarzeń
+  w GA Realtime. Rzeczywisty tag zweryfikowano w HTML produkcyjnym.
+- Content-gapy bez zmian: brak realnych kwot strat/opinii/zgody na nazwę hotelu;
+  wzrost 10% pozostaje scenariuszem. U4–U11 audytu nie są objęte tym deployem.
+### Następne kroki
+- Obserwować wejścia z kampanii, konta i pierwszy pakiet/fakturę.
+
+
+## Sesja 2026-10-04: ilustracja procesu na landing
+### Zrobiono
+- Wygenerowano infografikę faktura → przepis → pakiet (built-in image_gen),
+  zapisano asset/prompt; dodano do lokalnego landingu i podglądu localhost:8766.
+- Zrzuty telefonu i desktopu oraz pakiet 4 plików bez niewdrożonych Ofert.
+### Zadziałało
+- Render Django, regresja kalkulatorów, obraz/320/375/768/1280 bez overflow,
+  routing z maila i obecność Google tagu.
+### Nie zadziałało
+- Nie użyto wspomnianego zdjęcia — nie było dostępne w tej rozmowie ani assetach.
+- Produkcja bez zmian; nowa ilustracja czeka na ocenę podglądu.
+### Następne kroki
+- Akceptacja ilustracji, backup, deploy 4 plików visual/deploy, rebuild,
+  obowiązkowa weryfikacja kodów Google. Content-gapy/opinie bez zmian.
+
+
+## Sesja 2026-10-04: zdjęcie zespołu kuchni na landing
+### Zrobiono
+- Dodano zdjęcie dostarczone przez użytkownika przy hero; zachowano infografikę.
+- WebP 1440×960 ~107 KB zamiast JPG 4,7 MB, oryginał zachowany, CSS v20261004-3.
+### Zadziałało
+- Django render i Chromium: zdjęcie/ilustracja, 320–1280 bez overflow,
+  kalkulatory, wejście z maila i tag Google zachowane. Podgląd localhost:8766.
+### Nie zadziałało
+- Produkcja jeszcze bez obu grafik; czeka na ocenę ostatecznego układu.
+### Następne kroki
+- Akceptacja, backup i wdrożenie 5 plików visual/deploy; obowiązkowa kontrola GA.
+
+
+## Sesja 2026-10-04: wdrożenie zdjęcia i infografiki
+### Zrobiono
+- Wdrożono zatwierdzone 5 plików visual/deploy, backup
+  kelnerzy:/root/fc-backup-visual-20261004-1525/, rebuild web/collectstatic.
+- Zdjęcie przy hero, infografika przy 3 krokach, CSS v20261004-3.
+### Zadziałało
+- HTTP /, /register/, /regulamin/ 200; GA4 G-6DYFBNNH6X i Consent Mode zachowane.
+- Chromium: oba obrazy, 320–1280 bez overflow, kalkulatory, zmiana ceny,
+  klawiatura, mail i obsługa zgody. Dowody w docs/landing-2026-10-04/visual/.
+### Nie zadziałało
+- Brak nowych problemów. GA Realtime nie sprawdzano; testowe pingi blokowane.
+### Następne kroki
+- Obserwować wejścia z kampanii i aktywację kont; content-gapy bez zmian.
+
+## Sesja 2026-10-28 — podlinkowanie sudomie
+### Zrobiono
+- Przygotowano lokalnie blok Narzędzia sudomie w templates/core/landing.html i styl w static/css/app.css. Źródło linków: ../sudomie.pl/data/produkty.json.
+### Zadziałało
+- Generator 0/8 nieaktualnych; podgląd szablonu Django + Chromium 390/1440 px: stopka czytelna.
+### Nie zadziałało / ograniczenia
+- Nie wdrażano: istniejąca niewdrożona praca WIP, zgodnie z zakresem zadania.
+### Następne kroki
+- Publikacja wraz z najbliższym wydaniem, [474](https://projekty.sudomie.pl/work_packages/474). Zadanie źródłowe: [473](https://projekty.sudomie.pl/work_packages/473).
+
+## Sesja 2026-10-28 (wyrównanie i demo)
+### Zrobiono
+- Porównanie git / lokalnie / produkcja plik po pliku (sha256): 32 pliki z produkcji poza gitem → commit `7a23a35`.
+- Demo bez rejestracji, Oferty za flagą, stopka sudomie, `seed` bez hasła w kodzie → commit `af539fd`. Testy 54/54.
+### Zadziałało
+- Kopia produkcji przez rsync tylko do odczytu + porównanie skrótów: jasny podział na „wdrożone, niezacommitowane”,
+  „tylko lokalnie” i „rozjechane” — rozjechane okazały się tylko Ofertami i stopką, bez konfliktów.
+- Flaga Ofert przez dekorator na adresach (nie warunkowe `urlpatterns`) — testy mogą ją włączyć `override_settings`.
+### Nie zadziałało
+- Pierwsze sprzątanie piaskownicy: `ProtectedError` (PROTECT na RecipeIngredient/MenuItem blokuje kaskadę) — usuwane najpierw.
+- Zapytanie tylko do odczytu o migracje i konto demo na serwerze zablokował tryb uprawnień — czeka na zgodę usera.
+### Następne kroki
+- Wdrożenie wg HANDOFF (2026-10-28) po zgodzie; sprawdzenie konta `demo@fc.sudomie.pl` na produkcji.
