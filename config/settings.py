@@ -170,3 +170,8 @@ OFFERS_ENABLED = os.environ.get('OFFERS_ENABLED', 'False') == 'True'
 DEMO_MAX = int(os.environ.get('DEMO_MAX', '0'))
 DEMO_HOURS = int(os.environ.get('DEMO_HOURS', '24'))
 DEMO_PER_HOUR = int(os.environ.get('DEMO_PER_HOUR', '60'))
+
+# Newsletter sudomie: pusty klucz = funkcja wyłączona (flaga). Klucz per aplikacja, nadany w sudomie.pl.
+NEWSLETTER_URL = os.environ.get('NEWSLETTER_URL', 'https://sudomie.pl/chat-api/newsletter')
+NEWSLETTER_KLUCZ = os.environ.get('NEWSLETTER_KLUCZ', '')
+NEWSLETTER_TIMEOUT = float(os.environ.get('NEWSLETTER_TIMEOUT', '5'))

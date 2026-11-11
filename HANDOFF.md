@@ -1,5 +1,15 @@
 # HANDOFF — FoodCost SaaS
 
+## Newsletter sudomie przy rejestracji (2026-11-11, KOD GOTOWY, NIEZACOMMITOWANE, NIEWDROŻONE)
+- Pole „Chcę dostawać newsletter sudomie” przy rejestracji, domyślnie niezaznaczone. Kod: `apps/accounts/newsletter.py`, pole w `RegisterForm` i `templates/accounts/register.html`.
+- **Flaga:** bez `NEWSLETTER_KLUCZ` w `.env` pola nie ma i nic nie wychodzi. Z kluczem: po zatwierdzeniu rejestracji
+  `POST https://sudomie.pl/chat-api/newsletter` (e-mail + IP użytkownika, nagłówek `X-Newsletter-Klucz`); sudomie.pl wysyła link
+  potwierdzający i trzyma dowód zgody. Błąd sieci = wpis w logu, rejestracja przechodzi. Tu nic nie zapisujemy w bazie.
+- **Wdrożenie:** (1) najpierw `bash ~/Claude/sudomie.pl/scripts/wdroz-klucze-newslettera.sh`; (2) zwykły deploy tej aplikacji;
+  (3) do `.env` produkcji dwie linie z `~/.config/sudomie/newsletter-env-dla-aplikacji.txt` (sekcja tej aplikacji) i restart;
+  (4) próba: rejestracja z zaznaczonym polem na własny adres → mail „Potwierdź zapis do newslettera sudomie”.
+- Testy: 65 OK w `fc-local` (7 nowych).
+
 ## 2026-10-28 wieczór: Oferty WŁĄCZONE, repozytorium przygotowane
 
 - `OFFERS_ENABLED=True` na produkcji (20:10). Demo i konto do pokazów mają 2 oferty (`apps/core/data/demo.json` → `offers`).

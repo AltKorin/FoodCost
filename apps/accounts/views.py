@@ -3,7 +3,10 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
+from django.db import transaction
+from . import newsletter
 from .decorators import setup_required
+from .signals import _get_ip
 from .forms import RegisterForm, LoginForm, OrganizationSetupForm, StyledPasswordChangeForm, TeamMemberForm
 from .models import LoginEvent, User
 
@@ -29,6 +32,9 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            if form.cleaned_data.get('newsletter'):
+                # Po zatwierdzeniu zapisu konta; błąd sieci tylko w logu, rejestracja przechodzi.
+                transaction.on_commit(lambda ip=_get_ip(request): newsletter.zapisz(user.email, ip))
             login(request, user)
             return redirect('accounts:setup')
     else:

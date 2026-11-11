@@ -9,6 +9,9 @@ from django.utils.safestring import mark_safe
 from .models import User, Organization
 
 
+from . import newsletter  # noqa: E402
+
+
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(
         label='Adres e-mail',
@@ -21,6 +24,11 @@ class RegisterForm(UserCreationForm):
         ),
         error_messages={'required': 'Zaakceptuj regulamin, żeby założyć konto.'},
     )
+    newsletter = forms.BooleanField(
+        required=False,
+        label='Chcę dostawać newsletter sudomie raz w miesiącu: nowości w FoodCost i poradniki. '
+              'Potwierdzę zapis linkiem z maila, wypiszę się w każdej chwili.',
+    )
 
     class Meta:
         model = User
@@ -31,6 +39,10 @@ class RegisterForm(UserCreationForm):
         self.fields['password1'].widget.attrs['class'] = 'form-control'
         self.fields['password2'].widget.attrs['class'] = 'form-control'
         self.fields['accept_tos'].widget.attrs['class'] = 'form-check-input'
+        if newsletter.wlaczony():
+            self.fields['newsletter'].widget.attrs['class'] = 'form-check-input'
+        else:
+            del self.fields['newsletter']  # flaga: bez klucza pola nie ma
 
     def save(self, commit=True):
         user = super().save(commit=False)

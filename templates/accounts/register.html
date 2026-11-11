@@ -32,6 +32,12 @@
                 {{ form.accept_tos.label_tag }}
                 {{ form.accept_tos.errors }}
             </div>
+            {% if form.newsletter %}
+            <div class="form-check mb-3">
+                {{ form.newsletter }}
+                {{ form.newsletter.label_tag }}
+            </div>
+            {% endif %}
 
             <button class="btn btn-primary w-100" type="submit">Załóż konto</button>
         </form>
