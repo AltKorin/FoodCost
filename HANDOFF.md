@@ -1,6 +1,6 @@
 # HANDOFF — FoodCost SaaS
 
-## Newsletter sudomie przy rejestracji (2026-11-11, KOD GOTOWY, NIEZACOMMITOWANE, NIEWDROŻONE)
+## Newsletter sudomie przy rejestracji (WDROŻONE 2026-11-12, gałąź newsletter-sudomie, czeka na merge)
 - Pole „Chcę dostawać newsletter sudomie” przy rejestracji, domyślnie niezaznaczone. Kod: `apps/accounts/newsletter.py`, pole w `RegisterForm` i `templates/accounts/register.html`.
 - **Flaga:** bez `NEWSLETTER_KLUCZ` w `.env` pola nie ma i nic nie wychodzi. Z kluczem: po zatwierdzeniu rejestracji
   `POST https://sudomie.pl/chat-api/newsletter` (e-mail + IP użytkownika, nagłówek `X-Newsletter-Klucz`); sudomie.pl wysyła link
