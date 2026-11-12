@@ -18,6 +18,7 @@ class NewsletterTests(TestCase):
             with self.captureOnCommitCallbacks(execute=True):
                 return self.client.post(reverse('accounts:register'), {**DANE, **extra}, HTTP_X_FORWARDED_FOR='203.0.113.9')
 
+    @override_settings(NEWSLETTER_KLUCZ='')  # niezależnie od .env serwera, gdzie klucz już jest
     def test_bez_klucza_pola_nie_ma_i_nic_nie_wysylamy(self):
         self.assertNotContains(self.client.get(reverse('accounts:register')), 'name="newsletter"')
         wywolania = []
