@@ -30,4 +30,8 @@ Dane demo: `apps/core/data/demo.json` i `demo-faktura.json` (przykładowa faktur
 
 `HANDOFF.md` (stan, wdrożenie, pułapki), `SUMMARY.md` (historia sesji), `PLAN.md`, `DESIGN.md`, `docs/WDROZENIA.md`.
 
-Repozytorium prywatne — kod produktu komercyjnego (Komorowski & Windorpski sp. z o.o.).
+## Licencja
+
+MIT — plik `LICENSE`. Prawa: Komorowski & Windorpski sp. z o.o.
+
+Hostowana wersja: <https://fc.sudomie.pl> (demo bez rejestracji na stronie głównej).
